@@ -1,0 +1,19 @@
+[book]
+title = "topi-banana の競技プログラミングライブラリ"
+authors = ["topi-banana"]
+language = "ja"
+src = "src"
+
+[output.html]
+site-url = "/library/book/"
+git-repository-url = "https://github.com/topi-banana/library"
+edit-url-template = "https://github.com/topi-banana/library/edit/main/book/{path}"
+default-theme = "rust"
+preferred-dark-theme = "ayu"
+
+[output.html.playground]
+# 各 crate に依存するコード例は Playground では動かせない。
+runnable = false
+
+[output.html.search]
+enable = true

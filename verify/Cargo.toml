@@ -1,0 +1,15 @@
+[package]
+name = "verify"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+repository.workspace = true
+license.workspace = true
+
+# 各バイナリが Library Checker の 1 問に対応する。
+# ここに並ぶ依存は「どれか 1 つの verify で使われていればよい」ため、
+# crate 全体としては未使用にならない。
+[dependencies]
+dsu = { path = "../crates/dsu" }
+scanner = { path = "../crates/scanner" }
+segtree = { path = "../crates/segtree" }

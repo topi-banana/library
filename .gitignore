@@ -1,0 +1,14 @@
+/target
+
+# mdBook
+/book/book
+
+# competitive-verifier
+/.competitive-verifier/*
+!/.competitive-verifier/config.toml
+!/.competitive-verifier/docs/
+/verify_files.json
+/merged-result.json
+/result.json
+/_jekyll
+/_site

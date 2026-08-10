@@ -1,0 +1,8 @@
+# competitive-verifier (oj-resolve) の設定。
+#
+# kind = "none" のとき、依存関係は `cargo metadata` と
+# `cargo check --workspace --all-targets` が出力する dep-info から解決される。
+# "cargo-udeps" にすると未使用依存を除いたより厳密な解決になるが、
+# nightly ツールチェインと cargo-udeps のインストールが必要になる。
+[languages.rust.list_dependencies_backend]
+kind = "none"

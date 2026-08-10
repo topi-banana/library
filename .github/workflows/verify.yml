@@ -1,0 +1,204 @@
+name: verify
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      ignore_prev_result:
+        description: 前回の検証結果を無視してすべて検証し直す
+        type: boolean
+        default: false
+
+# GitHub Pages へのデプロイに必要な権限。
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Pages へのデプロイは同時に 1 つまで。
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  setup:
+    name: 検証対象の解決
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up competitive-verifier
+        uses: competitive-verifier/actions/setup@v2
+        with:
+          cache-pip: true
+
+      # oj-resolve は依存解決のために `cargo metadata` と
+      # `cargo check --workspace --all-targets` を実行するため、
+      # 解決の段階でも Rust ツールチェインが必要になる。
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: oj-resolve
+        uses: competitive-verifier/actions/oj-resolve@v2
+        with:
+          output-path: verify_files.json
+          include: |
+            crates
+            verify
+          config: .competitive-verifier/config.toml
+
+      - name: Upload verify_files.json
+        uses: competitive-verifier/actions/upload-verify-artifact@v2
+        with:
+          file: verify_files.json
+
+  verify:
+    name: 検証 (${{ matrix.index }})
+    runs-on: ubuntu-latest
+    needs: [setup]
+    env:
+      # 問題が増えて 1 ジョブあたりの時間が伸びてきたら、
+      # この値と matrix.index の要素数を一緒に増やす。
+      SPLIT_SIZE: 4
+    strategy:
+      fail-fast: false
+      matrix:
+        index: ["0", "1", "2", "3"]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # 前回の検証結果。ライブラリのソースが変わっていない問題はスキップされる。
+      - name: Restore cached results
+        if: ${{ ! inputs.ignore_prev_result }}
+        uses: actions/cache/restore@v6
+        id: restore-cached-results
+        with:
+          path: ${{ github.workspace }}/merged-result.json
+          key: ${{ runner.os }}-verify-result-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-verify-result-
+
+      - name: Download verify_files.json
+        uses: competitive-verifier/actions/download-verify-artifact@v2
+
+      - name: Set up competitive-verifier
+        uses: competitive-verifier/actions/setup@v2
+        with:
+          cache-pip: true
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Verify
+        uses: competitive-verifier/actions/verify@v2
+        with:
+          destination: ${{ runner.temp }}/result.json
+          split-size: ${{ env.SPLIT_SIZE }}
+          split-index: ${{ matrix.index }}
+          timeout: 1800
+          prev-result: ${{ steps.restore-cached-results.outputs.cache-hit && 'merged-result.json' || '' }}
+
+      - name: Upload result artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Result-${{ runner.os }}-${{ matrix.index }}
+          path: ${{ runner.temp }}/result.json
+          retention-days: 1
+
+  docs-and-check:
+    name: ページ生成と結果判定
+    runs-on: ubuntu-latest
+    needs: [verify]
+    outputs:
+      upload-pages: ${{ steps.upload-pages.outcome == 'success' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Download verify_files.json and all artifacts
+        id: all-artifacts
+        uses: competitive-verifier/actions/download-verify-artifact@v2
+        with:
+          download-all: true
+          artifact-root: .artifacts/
+
+      - name: Set up competitive-verifier
+        uses: competitive-verifier/actions/setup@v2
+        with:
+          cache-pip: true
+
+      - name: Merge results
+        uses: competitive-verifier/actions/merge-result@v2
+        with:
+          result-files: ${{ steps.all-artifacts.outputs.artifacts-root }}/Result-*/result.json
+          output-path: ${{ github.workspace }}/merged-result.json
+
+      - name: Docs
+        uses: competitive-verifier/actions/docs@v2
+        with:
+          verify-result: ${{ github.workspace }}/merged-result.json
+          destination: _jekyll
+          write-summary: true
+          include: |
+            crates
+            verify
+
+      # 次回の実行で --prev-result として使う。
+      - name: Save result
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ github.workspace }}/merged-result.json
+          key: ${{ runner.os }}-verify-result-${{ github.sha }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      # `/` に検証状況ページ、`/book/` に mdBook を置いた 1 つの成果物にまとめる。
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: _jekyll
+          destination: _site
+
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v2
+        with:
+          mdbook-version: "0.5.4"
+
+      - name: Build book
+        # --dest-dir はカレントディレクトリからの相対パスとして解決される。
+        run: mdbook build book --dest-dir _site/book
+
+      - name: Upload artifact
+        id: upload-pages
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+      # 検証に失敗した問題があればここでワークフローを失敗させる。
+      # ページのアップロードより後に置くことで、失敗時も結果ページは公開される。
+      - name: Check
+        uses: competitive-verifier/actions/check@v2
+        with:
+          verify-result: ${{ github.workspace }}/merged-result.json
+
+  deploy:
+    name: GitHub Pages へデプロイ
+    if: (success() || failure()) && github.ref == 'refs/heads/main' && needs.docs-and-check.outputs.upload-pages == 'true'
+    needs: docs-and-check
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

@@ -1,0 +1,10 @@
+[package]
+name = "dsu"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
