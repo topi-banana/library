@@ -168,6 +168,11 @@ jobs:
           source: _jekyll
           destination: _site
 
+      # jekyll-build-pages は Docker コンテナ内の root として動くため、
+      # 生成された _site も root 所有になる。後続の mdbook が書き込めるようにする。
+      - name: Take ownership of the Jekyll output
+        run: sudo chown -R "$(id -u):$(id -g)" _site
+
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v2
         with:
