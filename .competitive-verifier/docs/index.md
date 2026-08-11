@@ -1,5 +1,6 @@
 競技プログラミング用の Rust ライブラリです。
-アルゴリズムごとに crate を分け、[Library Checker](https://judge.yosupo.jp/) の問題で正当性を検証しています。
+アルゴリズムごとに crate を分け、[Library Checker](https://judge.yosupo.jp/) や
+[yukicoder](https://yukicoder.me/) の問題で正当性を検証しています。
 
 ## ドキュメント
 

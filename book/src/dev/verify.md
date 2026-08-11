@@ -3,32 +3,52 @@
 正当性の検証には [competitive-verifier](https://github.com/competitive-verifier/competitive-verifier) を使います。
 `verify` crate のバイナリ 1 つが、ジャッジの 1 問に対応します。
 
+対応するジャッジ問題が無いライブラリは、ユニットテストと doctest だけで検証します。
+
 ## ファイルを置く
 
 `verify/src/bin/` に `<ジャッジ名>-<問題名>.rs` を作り、
 先頭に `PROBLEM` を宣言します。
 
 ```rust
-// competitive-verifier: PROBLEM https://judge.yosupo.jp/problem/unionfind
+// competitive-verifier: PROBLEM https://yukicoder.me/problems/no/1469
 
-use std::io::{self, BufWriter, Write};
+use std::io::{self, Read, Write};
 
-use dsu::Dsu;
-use scanner::Scanner;
+use rle::Rle;
 
 fn main() -> io::Result<()> {
-    let mut sc = Scanner::from_stdin()?;
-    let stdout = io::stdout();
-    let mut out = BufWriter::new(stdout.lock());
+    let mut input = String::new();
+    io::stdin().read_to_string(&mut input)?;
+    let s = input.trim_end();
 
     // 問題を解く
 
-    out.flush()
+    let stdout = io::stdout();
+    let mut out = stdout.lock();
+    out.write_all(s.as_bytes())
 }
 ```
 
 `// competitive-verifier: PROBLEM <URL>` の行がないファイルは検証対象になりません。
 Library Checker のほか、AOJ や yukicoder の URL も指定できます。
+
+### yukicoder を使うとき
+
+yukicoder はテストケースの取得に API トークンが必要です。
+[yukicoder のマイページ](https://yukicoder.me/my/page) で API キーを発行し、
+リポジトリのシークレットに `YUKICODER_TOKEN` という名前で登録してください。
+`verify.yml` の Verify ステップから環境変数として渡しています。
+
+```yaml
+      - name: Verify
+        uses: competitive-verifier/actions/verify@v2
+        env:
+          YUKICODER_TOKEN: ${{ secrets.YUKICODER_TOKEN }}
+```
+
+シークレットが未設定だと、テストケースのダウンロードに失敗して verify が落ちます。
+ローカルで動かすときも同じ名前の環境変数を設定してください。
 
 使う crate は `verify/Cargo.toml` の `[dependencies]` に追加してください。
 バイナリごとに使う crate は違いますが、`cargo machete` は crate 全体を見るため、
@@ -57,6 +77,6 @@ $ competitive-verifier verify
 
 ```console
 $ cargo build --bins
-$ printf '4 7\n1 0 1\n0 0 1\n0 2 3\n1 0 1\n1 1 2\n0 0 2\n1 1 3\n' \
-    | ./target/debug/library-checker-unionfind
+$ printf 'programming\n' | ./target/debug/yukicoder-1469
+programing
 ```

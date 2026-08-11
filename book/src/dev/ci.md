@@ -17,12 +17,12 @@ push と pull request のたびに走ります。数分で終わる軽い検査�
 
 ジョブを分けているのは、`fmt` が落ちても `clippy` の結果が見えるようにするためです。
 
-## `verify.yml` — Library Checker による検証と Pages のデプロイ
+## `verify.yml` — ジャッジによる検証と Pages のデプロイ
 
 `main` への push と手動実行 (`workflow_dispatch`) で走ります。
 
 1. **setup** — `cargo check` を通し、`oj-resolve` で検証対象を洗い出す
-2. **verify** — 検証対象を 10 分割し、matrix で並列に実行する
+2. **verify** — 検証対象を `SPLIT_SIZE` (現在 4) で分割し、matrix で並列に実行する
 3. **docs-and-check** — 結果から Jekyll サイトを生成し、mdBook と束ねて Pages 用アーティファクトにする
 4. **deploy** — GitHub Pages に公開する
 
@@ -40,16 +40,30 @@ verify ジョブの結果は `actions/cache` に保存され、次回は `--prev
 $ competitive-verifier oj-resolve --include crates verify --config .competitive-verifier/config.toml
 ```
 
+たとえば `verify/Cargo.toml` に `rle` と `fenwick` の 2 つを書いていると、
+`rle` しか使っていないバイナリでも次のように解決されます。
+
 ```text
-verify/src/bin/library-checker-point-add-range-sum.rs
-    deps: crates/dsu/src/lib.rs, crates/scanner/src/lib.rs, crates/segtree/src/lib.rs
+verify/src/bin/yukicoder-1469.rs
+    deps: crates/fenwick/src/lib.rs, crates/rle/src/lib.rs
 ```
 
-つまり `dsu` を書き換えると、`dsu` を使っていない問題まで再検証されます。
+つまり `fenwick` を書き換えると、`fenwick` を使っていない問題まで再検証されます。
 問題数が増えて差分検証が効かないことが実際に負担になったら、
 `kind = "cargo-udeps"` に切り替えてください。
 未使用依存が除かれる代わりに、setup ジョブに nightly ツールチェインと
 `cargo-udeps` のインストールが必要になります。
+
+### 必要なシークレット
+
+| 名前 | 用途 |
+| --- | --- |
+| `YUKICODER_TOKEN` | yukicoder のテストケース取得。[マイページ](https://yukicoder.me/my/page) の API キー |
+
+verify ジョブの Verify ステップに環境変数として渡しています。
+未設定のまま yukicoder の問題を検証しようとすると、
+テストケースのダウンロードに失敗して verify が落ちます。
+Pages のデプロイに使う `GITHUB_TOKEN` は自動で渡されるため、登録は不要です。
 
 ## 公開されるページ
 

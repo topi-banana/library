@@ -1,5 +1,5 @@
 [package]
-name = "dsu"
+name = "rle"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true

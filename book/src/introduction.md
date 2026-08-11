@@ -1,7 +1,8 @@
 # はじめに
 
 競技プログラミング用の Rust ライブラリです。アルゴリズムごとに crate を分け、
-[Library Checker](https://judge.yosupo.jp/) の問題を使って CI で正当性を検証しています。
+[Library Checker](https://judge.yosupo.jp/) や [yukicoder](https://yukicoder.me/) の問題を使って
+CI で正当性を検証しています。
 
 - リポジトリ: <https://github.com/topi-banana/library>
 - verify の実行状況: <https://topi-banana.github.io/library/>
@@ -12,10 +13,8 @@
 ```text
 library/
 ├── crates/          各アルゴリズムの crate
-│   ├── dsu/
-│   ├── scanner/
-│   └── segtree/
-├── verify/          Library Checker の 1 問 = 1 バイナリ
+│   └── rle/
+├── verify/          ジャッジの 1 問 = 1 バイナリ
 │   └── src/bin/
 └── book/            このドキュメント (mdBook)
 ```
@@ -29,7 +28,7 @@ library/
 
 ```toml
 [dependencies]
-segtree = { git = "https://github.com/topi-banana/library" }
+rle = { git = "https://github.com/topi-banana/library" }
 ```
 
 コンテスト本番では単一ファイルにまとめる必要があるため、

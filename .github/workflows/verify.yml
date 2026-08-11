@@ -104,6 +104,11 @@ jobs:
           split-index: ${{ matrix.index }}
           timeout: 1800
           prev-result: ${{ steps.restore-cached-results.outputs.cache-hit && 'merged-result.json' || '' }}
+        env:
+          # yukicoder のテストケース取得には API トークンが必要。
+          # https://yukicoder.me/my/page の API キーを、リポジトリのシークレット
+          # YUKICODER_TOKEN に登録しておく。
+          YUKICODER_TOKEN: ${{ secrets.YUKICODER_TOKEN }}
 
       - name: Upload result artifact
         uses: actions/upload-artifact@v7

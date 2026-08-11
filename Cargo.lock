@@ -3,22 +3,12 @@
 version = 4
 
 [[package]]
-name = "dsu"
-version = "0.1.0"
-
-[[package]]
-name = "scanner"
-version = "0.1.0"
-
-[[package]]
-name = "segtree"
+name = "rle"
 version = "0.1.0"
 
 [[package]]
 name = "verify"
 version = "0.1.0"
 dependencies = [
- "dsu",
- "scanner",
- "segtree",
+ "rle",
 ]

@@ -6,11 +6,8 @@
 
 # ライブラリ
 
-- [データ構造](./ds/index.md)
-  - [Dsu — 素集合データ構造](./ds/dsu.md)
-  - [Segtree — セグメント木](./ds/segtree.md)
-- [入出力](./io/index.md)
-  - [Scanner](./io/scanner.md)
+- [列](./seq/index.md)
+  - [Rle — 連長圧縮](./seq/rle.md)
 
 ---
 
