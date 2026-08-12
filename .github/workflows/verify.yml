@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  pull_request:
   workflow_dispatch:
     inputs:
       ignore_prev_result:
@@ -11,15 +12,17 @@ on:
         type: boolean
         default: false
 
-# GitHub Pages へのデプロイに必要な権限。
+# GitHub Pages へのデプロイと PR へのコメント投稿に必要な権限。
 permissions:
   contents: read
   pages: write
   id-token: write
+  pull-requests: write
 
-# Pages へのデプロイは同時に 1 つまで。
+# ブランチ・PR ごとに検証が並行して走るように、リファレンスごとにグループを分ける。
+# 同じリファレンスへの再実行は直前の実行をキャンセルする。
 concurrency:
-  group: "pages"
+  group: verify-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -146,6 +149,19 @@ jobs:
           result-files: ${{ steps.all-artifacts.outputs.artifacts-root }}/Result-*/result.json
           output-path: ${{ github.workspace }}/merged-result.json
 
+      # コメント用のサマリーをファイルに書き出す。
+      # GITHUB_STEP_SUMMARY はランナーが管理する変数で上書きが無視されるため、
+      # コマンドが書き込んだランナー側のサマリーファイルをコピーして使う。
+      - name: Generate verify summary for PR comment
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        shell: bash
+        run: |
+          competitive-verifier merge-result "${{ github.workspace }}/merged-result.json" \
+            --write-summary
+          cp "$GITHUB_STEP_SUMMARY" "${{ runner.temp }}/verify-summary.md"
+          # 中身が空のままだとコメントが黙ってスキップされるので、ここで失敗させる。
+          test -s "${{ runner.temp }}/verify-summary.md"
+
       - name: Docs
         uses: competitive-verifier/actions/docs@v2
         with:
@@ -157,7 +173,9 @@ jobs:
             verify
 
       # 次回の実行で --prev-result として使う。
+      # フォークからの PR ではキャッシュを書き込めないためスキップする。
       - name: Save result
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         uses: actions/cache/save@v6
         with:
           path: ${{ github.workspace }}/merged-result.json
@@ -199,6 +217,17 @@ jobs:
         uses: competitive-verifier/actions/check@v2
         with:
           verify-result: ${{ github.workspace }}/merged-result.json
+
+      # PR には検証結果のサマリーをコメントとして投稿する。
+      # 失敗したときこそコメントが欲しいので always() にする。
+      # フォークからの PR は GITHUB_TOKEN にコメント権限がないため対象外。
+      - name: Post verify result comment
+        uses: marocchino/sticky-pull-request-comment@v3
+        if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        with:
+          header: competitive-verifier
+          path: ${{ runner.temp }}/verify-summary.md
+          ignore_empty: true
 
   deploy:
     name: GitHub Pages へデプロイ
