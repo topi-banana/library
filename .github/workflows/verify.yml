@@ -150,18 +150,17 @@ jobs:
           output-path: ${{ github.workspace }}/merged-result.json
 
       # コメント用のサマリーをファイルに書き出す。
-      # 通常の run ステップなら GITHUB_STEP_SUMMARY の差し替えが確実に効く
-      # (composite action 内だとランナーが上書きしてしまう)。
+      # GITHUB_STEP_SUMMARY はランナーが管理する変数で上書きが無視されるため、
+      # コマンドが書き込んだランナー側のサマリーファイルをコピーして使う。
       - name: Generate verify summary for PR comment
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         shell: bash
         run: |
           competitive-verifier merge-result "${{ github.workspace }}/merged-result.json" \
             --write-summary
+          cp "$GITHUB_STEP_SUMMARY" "${{ runner.temp }}/verify-summary.md"
           # 中身が空のままだとコメントが黙ってスキップされるので、ここで失敗させる。
           test -s "${{ runner.temp }}/verify-summary.md"
-        env:
-          GITHUB_STEP_SUMMARY: ${{ runner.temp }}/verify-summary.md
 
       - name: Docs
         uses: competitive-verifier/actions/docs@v2
