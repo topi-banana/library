@@ -157,7 +157,6 @@ jobs:
         shell: bash
         run: |
           competitive-verifier merge-result "${{ github.workspace }}/merged-result.json" \
-            --output-path "${{ runner.temp }}/merged-result.json" \
             --write-summary
           # 中身が空のままだとコメントが黙ってスキップされるので、ここで失敗させる。
           test -s "${{ runner.temp }}/verify-summary.md"
