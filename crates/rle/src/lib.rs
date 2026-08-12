@@ -41,7 +41,6 @@ pub fn rle<T: Iterator<Item = I>, I: PartialEq>(iter: &mut T) -> Vec<(I, usize)>
     let mut cnt = 1usize;
     for now in iter {
         if now != pre {
-            // 区間が切り替わるので、直前の区間を確定させて cnt を 0 に戻す。
             res.push((pre, std::mem::take(&mut cnt)));
         }
         pre = now;
@@ -51,13 +50,10 @@ pub fn rle<T: Iterator<Item = I>, I: PartialEq>(iter: &mut T) -> Vec<(I, usize)>
     res
 }
 
-/// [`Rle::rle`] が返すイテレータ。
 #[derive(Debug, Clone)]
 pub struct RleIter<T, I> {
     iter: T,
-    /// 出力待ちの区間の値。元のイテレータが尽きたあとは `None`。
     pre: Option<I>,
-    /// `pre` と同じ値がここまでに何個続いたか。
     cnt: usize,
 }
 
@@ -75,36 +71,11 @@ impl<T: Iterator<Item = I>, I: PartialEq> Iterator for RleIter<T, I> {
             }
             self.cnt += 1;
         }
-        // 元のイテレータが尽きた。`pre` は take 済みなので次回以降は None を返す。
         Some((pre, std::mem::take(&mut self.cnt)))
     }
 }
 
-/// イテレータに連長圧縮のアダプタを生やす拡張トレイト。
-///
-/// [`Iterator`] を実装するすべての型に対して実装されている。
 pub trait Rle: Iterator + Sized {
-    /// 連長圧縮した [`RleIter`] を返す。
-    ///
-    /// 各要素は `(値, 連続する個数)` で、個数は必ず 1 以上になる。
-    /// 元の列が空なら、返るイテレータも空になる。
-    ///
-    /// 1 要素を返すのに必要な分だけ元のイテレータを進めるため、
-    /// 無限列に対しても使える。ただし呼び出した時点で先頭の 1 要素を読むので、
-    /// 副作用のあるイテレータに対しては最初の [`Iterator::next`] より前に 1 要素進む。
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rle::Rle;
-    ///
-    /// let runs: Vec<_> = [1, 1, 2, 1].into_iter().rle().collect();
-    /// assert_eq!(runs, vec![(1, 2), (2, 1), (1, 1)]);
-    ///
-    /// // 無限列でも先頭から順に取り出せる。
-    /// let heads: Vec<_> = (0..).map(|i| i / 3).rle().take(2).collect();
-    /// assert_eq!(heads, vec![(0, 3), (1, 3)]);
-    /// ```
     fn rle(mut self) -> RleIter<Self, Self::Item>
     where
         Self::Item: PartialEq,
