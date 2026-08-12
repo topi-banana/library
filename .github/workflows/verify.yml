@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  pull_request:
   workflow_dispatch:
     inputs:
       ignore_prev_result:
@@ -11,15 +12,17 @@ on:
         type: boolean
         default: false
 
-# GitHub Pages へのデプロイに必要な権限。
+# GitHub Pages へのデプロイと PR へのコメント投稿に必要な権限。
 permissions:
   contents: read
   pages: write
   id-token: write
+  pull-requests: write
 
-# Pages へのデプロイは同時に 1 つまで。
+# ブランチ・PR ごとに検証が並行して走るように、リファレンスごとにグループを分ける。
+# 同じリファレンスへの再実行は直前の実行をキャンセルする。
 concurrency:
-  group: "pages"
+  group: verify-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -155,9 +158,24 @@ jobs:
           include: |
             crates
             verify
+        env:
+          # サマリーをファイルに書き出す。PR コメントの本文と、
+          # 後続ステップでのジョブサマリーへの復元の両方で使う。
+          GITHUB_STEP_SUMMARY: ${{ runner.temp }}/verify-summary.md
+
+      # Docs ステップではサマリーの書き出し先を差し替えていたので、
+      # 通常のジョブサマリーにも同じ内容を復元する。
+      - name: Write job summary
+        shell: bash
+        run: |
+          if test -f "${{ runner.temp }}/verify-summary.md"; then
+            cat "${{ runner.temp }}/verify-summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       # 次回の実行で --prev-result として使う。
+      # フォークからの PR ではキャッシュを書き込めないためスキップする。
       - name: Save result
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         uses: actions/cache/save@v6
         with:
           path: ${{ github.workspace }}/merged-result.json
@@ -199,6 +217,23 @@ jobs:
         uses: competitive-verifier/actions/check@v2
         with:
           verify-result: ${{ github.workspace }}/merged-result.json
+
+      # PR には検証結果のサマリーをコメントとして投稿する。
+      # 失敗したときこそコメントが欲しいので always() にする。
+      # フォークからの PR は GITHUB_TOKEN にコメント権限がないため対象外。
+      - name: Post verify result comment
+        uses: marocchino/sticky-pull-request-comment@v3
+        if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        with:
+          header: competitive-verifier
+          message: |
+            ## 検証結果
+
+            {{{content}}}
+
+            <sub>[ワークフロー実行](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})</sub>
+          path: ${{ runner.temp }}/verify-summary.md
+          ignore_empty: true
 
   deploy:
     name: GitHub Pages へデプロイ
