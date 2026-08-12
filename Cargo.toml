@@ -9,6 +9,10 @@ repository = "https://github.com/topi-banana/library"
 license = "CC0-1.0"
 publish = false
 
+[workspace.dependencies]
+proconio = "0.6.0"
+rle = { path = "crates/rle" }
+
 [workspace.lints.clippy]
 must_use_candidate = "allow"
 
