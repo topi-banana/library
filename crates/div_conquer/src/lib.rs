@@ -1,6 +1,8 @@
-struct DivConquer<const N: usize, Element, Cache, Result, Arg> {
+pub struct DivConquer<const N: usize, Element, Cache, Result, Arg> {
     slice: Vec<Element>,
     cache: Vec<Cache>,
+    // 点更新でブロックのキャッシュを張り直すために保持している。更新系を実装したら expect を外す。
+    #[expect(dead_code)]
     cacher: fn(&[Element]) -> Cache,
     resolver: fn(&[Element], &Arg) -> Result,
     cache_resolver: fn(&Cache, &Arg) -> Result,
@@ -8,7 +10,7 @@ struct DivConquer<const N: usize, Element, Cache, Result, Arg> {
 }
 
 impl<const N: usize, E, C, R, A> DivConquer<N, E, C, R, A> {
-    fn new(
+    pub fn new(
         slice: Vec<E>,
         cacher: fn(&[E]) -> C,
         resolver: fn(&[E], &A) -> R,
@@ -16,9 +18,16 @@ impl<const N: usize, E, C, R, A> DivConquer<N, E, C, R, A> {
         merger: fn(R, R) -> R,
     ) -> Self {
         let cache = slice.chunks(N).map(&cacher).collect::<Vec<_>>();
-        Self { slice, cache, cacher, resolver, cache_resolver, merger }
+        Self {
+            slice,
+            cache,
+            cacher,
+            resolver,
+            cache_resolver,
+            merger,
+        }
     }
-    fn resolve(&self, range: impl std::ops::RangeBounds<usize>, arg: &A) -> R
+    pub fn resolve(&self, range: impl std::ops::RangeBounds<usize>, arg: &A) -> R
     where
         R: Default + Clone,
     {
