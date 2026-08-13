@@ -315,6 +315,9 @@ mod tests {
     }
 
     #[test]
+    // 1 本だけの Range 配列は「範囲そのものの Vec の書き間違い」と見なされるが、
+    // ここは意図して 1 区間だけを流し込んでいる。
+    #[allow(clippy::single_range_in_vec_init)]
     fn remove_splits_and_truncates() {
         let mut r: Ranges<i32> = [1..10].into_iter().collect();
         r.remove(3..5);
