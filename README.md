@@ -16,6 +16,7 @@
 ```text
 library/
 ├── crates/                 各アルゴリズムの crate
+│   ├── mo/                 Mo's algorithm (区間クエリのオフライン処理)
 │   ├── permutation/        順列 (辞書順の遷移と全列挙)
 │   └── rle/                連長圧縮 (Run-Length Encoding)
 ├── verify/src/bin/         ジャッジの 1 問 = 1 バイナリ

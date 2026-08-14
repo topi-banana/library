@@ -3,6 +3,10 @@
 version = 4
 
 [[package]]
+name = "mo"
+version = "0.1.0"
+
+[[package]]
 name = "permutation"
 version = "0.1.0"
 
@@ -20,6 +24,7 @@ version = "0.1.0"
 name = "verify"
 version = "0.1.0"
 dependencies = [
+ "mo",
  "permutation",
  "proconio",
  "rle",
