@@ -7,5 +7,6 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+permutation.workspace = true
 proconio.workspace = true
 rle.workspace = true
