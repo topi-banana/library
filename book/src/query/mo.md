@@ -5,7 +5,8 @@
 「区間の端を 1 要素だけ動かす」操作が軽い問題に使えます。
 
 - 実装: [`crates/mo/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/mo/src/lib.rs)
-- verify: なし (doctest のみ)
+- verify: [yukicoder No.1471 Sort Queries](https://yukicoder.me/problems/no/1471),
+  [yukicoder No.924 紲星](https://yukicoder.me/problems/no/924)
 
 区間内の異なる値の個数、転倒数、モードなど、
 「要素を 1 個足す / 1 個引く」が `O(1)` や `O(log n)` でできて、
@@ -129,15 +130,44 @@ assert_eq!(*mo.execute(&mut state), [2, 3, 1]);
 
 ## verify
 
-対応するジャッジ問題での verify はまだありません。
-crate ドキュメントの doctest が回帰テストを兼ねています。
+yukicoder の 2 問で検証しています。
 
-verify を追加するなら
-[Library Checker: Static Range Inversions Query](https://judge.yosupo.jp/problem/static_range_inversions_query)
-が定番です。その際はルートの `Cargo.toml` の `[workspace.dependencies]` と
-`verify/Cargo.toml` の `[dependencies]` に `mo` を足す必要があります
-(現状はどちらにも入っていません)。
-手順は [verify を書く](../dev/verify.md) を参照してください。
+### No.1471 Sort Queries
+
+[No.1471 Sort Queries](https://yukicoder.me/problems/no/1471) は、
+部分文字列 `S[L..R]` を並べ替えた辞書順最小の文字列の `X` 文字目を答える問題です。
+辞書順最小は「`a` から順に個数だけ並べた文字列」なので、
+区間内の各文字の個数がわかれば `X` 文字目は決まります。
+
+ただし `solve` にはクエリ固有の値 (この問題の `X`) を渡せません。
+処理順は Hilbert 順に並べ替えられるため、状態の側から
+「今どのクエリを処理しているか」を知る方法もありません。
+そこで `Ans` を個数の表 `[usize; 26]` にして `solve` では状態をそのまま返し、
+`execute` が返した答えを push 順のクエリと突き合わせてから `X` 文字目を求めています。
+クエリごとのパラメータが必要な問題は、この形に落とすのが定石です。
+
+実際の verify コードは
+[`verify/src/bin/yukicoder-1471.rs`](https://github.com/topi-banana/library/blob/main/verify/src/bin/yukicoder-1471.rs)
+です。
+
+### No.924 紲星
+
+[No.924 紲星](https://yukicoder.me/problems/no/924) は、
+区間に対して `f(x) = Σ|x - A_k|` の最小値を答える問題です。
+`f` は `x` が区間の中央値のとき最小になるので、
+中央値と「中央値までの要素の和」がわかれば答えが求まります。
+
+`N, Q <= 2 * 10^5` と大きく、端の移動は `O(n √q)` 回、
+つまり 10^8 のオーダーで起こります。
+そのため値を座標圧縮したうえで `√m` 個ずつのバケットに分けて個数と総和を持ち、
+`add` / `del` を `O(1)`、`solve` の中央値探索を `O(√m)` にしています。
+個数を BIT で持つと `add` / `del` が `O(log n)` になり、この呼び出し回数では
+定数倍が厳しくなります。**回数が多いのは `solve` ではなく端の移動の方**という
+Mo の計算量の形が、そのまま実装の選択に効いてくる例です。
+
+実際の verify コードは
+[`verify/src/bin/yukicoder-924.rs`](https://github.com/topi-banana/library/blob/main/verify/src/bin/yukicoder-924.rs)
+です。
 
 ## 実装メモ
 
