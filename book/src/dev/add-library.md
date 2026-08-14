@@ -30,9 +30,9 @@ workspace = true
 
 ## 2. 実装する
 
-ワークスペースの lint 設定で `missing_docs` が `warn` になっています。
-CI は `-D warnings` で clippy を走らせるため、
-公開アイテムにはすべてドキュメントコメントが必要です。
+ワークスペースの lint 設定では `missing_docs` を `allow` にしていますが、
+公開アイテムにはドキュメントコメントを書いてください。
+CI は `-D warnings` で clippy を走らせるので、他の警告も残せません。
 
 パニックしうる関数には `# Panics` セクションを、
 `Result` を返す関数には `# Errors` セクションを書いてください。
