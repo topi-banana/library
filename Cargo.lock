@@ -37,6 +37,7 @@ name = "verify"
 version = "0.1.0"
 dependencies = [
  "div_conquer",
+ "kmp",
  "mo",
  "permutation",
  "proconio",
