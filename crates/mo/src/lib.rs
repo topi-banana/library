@@ -13,10 +13,14 @@ pub trait MoSol {
     fn solve(&mut self) -> Self::Ans;
 }
 
+#[derive(Debug, Clone, Default)]
 pub struct Mo {
     queries: Vec<(usize, usize, usize)>,
 }
 impl Mo {
+    pub fn new() -> Self {
+        Self::default()
+    }
     /// [l..r)
     pub fn push(&mut self, l: usize, r: usize) {
         self.queries.push((l, r, self.queries.len()));
