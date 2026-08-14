@@ -1,5 +1,52 @@
-// 行列累乗法
-// O(log n)
+//! フィボナッチ数列。
+//!
+//! `F(0) = 0`、`F(1) = 1`、`F(n) = F(n - 1) + F(n - 2)` で定まる数列を [`u128`] で扱う。
+//!
+//! 第 `n` 項だけを `O(log n)` で求める [`fibonacci_matrix_pow`] と、
+//! 先頭から順に列挙するイテレータ [`Fibonacci`] がある。
+//!
+//! ```
+//! use fibonacci::{Fibonacci, fibonacci_matrix_pow};
+//!
+//! assert_eq!(fibonacci_matrix_pow(0), 0);
+//! assert_eq!(fibonacci_matrix_pow(10), 55);
+//!
+//! let fib = Fibonacci { a: 0, b: 1 };
+//! assert_eq!(fib.take(5).collect::<Vec<_>>(), vec![1, 1, 2, 3, 5]);
+//! ```
+//!
+//! いずれも [`u128`] の範囲を超えたときの扱いはビルドの
+//! オーバーフロー検査に従う。詳細は各アイテムの `# Panics` を参照。
+
+/// 行列累乗法で第 `n` 項 `F(n)` を求める。
+///
+/// `[[1, 1], [1, 0]]` の `n - 1` 乗の左上成分が `F(n)` に等しいことを使い、
+/// 繰り返し二乗法で `O(log n)` 回の行列積に落とす。
+/// `F(0) = 0`、`F(1) = F(2) = 1` の添字で、`fibonacci_matrix_pow(0)` は `0` を返す。
+///
+/// 先頭から順に列挙したいときは [`Fibonacci`] を使う。
+/// 第 `n` 項までまとめて必要なら、そちらのほうが全体で `O(n)` と速い。
+///
+/// # Panics
+///
+/// 途中の計算が [`u128`] に収まらないとき、オーバーフロー検査が有効なビルド
+/// (debug ビルド) では panic する。内部で持つ行列を必要より 1 回多く二乗するため、
+/// `F(n)` 自体が収まるかどうかとは関係なく `n >= 129` で panic する。
+///
+/// 検査が無効なビルド (release ビルド) では `2^128` を法とした値になり、
+/// 使われない二乗のあふれは結果に影響しないため、
+/// `F(n)` が収まる `n <= 186` までは正しい値が返る。
+///
+/// # Examples
+///
+/// ```
+/// use fibonacci::fibonacci_matrix_pow;
+///
+/// assert_eq!(fibonacci_matrix_pow(0), 0);
+/// assert_eq!(fibonacci_matrix_pow(1), 1);
+/// assert_eq!(fibonacci_matrix_pow(2), 1);
+/// assert_eq!(fibonacci_matrix_pow(50), 12586269025);
+/// ```
 pub fn fibonacci_matrix_pow(n: usize) -> u128 {
     fn matrix_multiply(a: [[u128; 2]; 2], b: [[u128; 2]; 2]) -> [[u128; 2]; 2] {
         [
@@ -33,11 +80,47 @@ pub fn fibonacci_matrix_pow(n: usize) -> u128 {
     result[0][0]
 }
 
-// イテレータ
-// O(n)
-// next()あたりO(1)
+/// フィボナッチ数列を第 1 項から順に返す無限イテレータ。
+///
+/// 直前の 2 項だけを持ち、[`next`](Iterator::next) 1 回あたり `O(1)` で進む。
+/// 第 `n` 項まで取り出すと全体で `O(n)`。
+/// [`next`](Iterator::next) が [`None`] を返すことはないので、
+/// [`take`](Iterator::take) などで打ち切って使う。
+///
+/// 直前に返した項を `F(k)` として、`a == F(k)`、`b == F(k + 1)` が保たれる。
+/// 初期値 `Fibonacci { a: 0, b: 1 }` は `k = 0` にあたり、
+/// 最初の [`next`](Iterator::next) は `F(1) = 1` を返す。
+/// 途中の項から始めたいときは、この不変条件を満たす値を直接入れればよい。
+///
+/// # Panics
+///
+/// [`next`](Iterator::next) は返す項の 1 つ先まで計算するため、
+/// オーバーフロー検査が有効なビルド (debug ビルド) では
+/// `F(187)` を作る `F(186)` の生成時に panic する。取り出せるのは `F(185)` まで。
+///
+/// 検査が無効なビルド (release ビルド) では `2^128` を法とした値になり、
+/// `F(186)` までは正しい値が返る。
+///
+/// # Examples
+///
+/// ```
+/// use fibonacci::Fibonacci;
+///
+/// let fib = Fibonacci { a: 0, b: 1 };
+/// assert_eq!(fib.take(10).collect::<Vec<_>>(), vec![1, 1, 2, 3, 5, 8, 13, 21, 34, 55]);
+///
+/// // 100 を超える最初の項
+/// let fib = Fibonacci { a: 0, b: 1 };
+/// assert_eq!(fib.take_while(|&f| f <= 100).last(), Some(89));
+///
+/// // F(10) = 55、F(11) = 89 から再開する
+/// let fib = Fibonacci { a: 55, b: 89 };
+/// assert_eq!(fib.take(3).collect::<Vec<_>>(), vec![89, 144, 233]);
+/// ```
 pub struct Fibonacci {
+    /// 直前に返した項 `F(k)`。
     pub a: u128,
+    /// 次に返す項 `F(k + 1)`。
     pub b: u128,
 }
 impl Iterator for Fibonacci {
