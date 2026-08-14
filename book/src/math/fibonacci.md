@@ -4,7 +4,9 @@
 値の型はいずれも `u128` 固定です。
 
 - 実装: [`crates/fibonacci/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/fibonacci/src/lib.rs)
-- verify: 対応するジャッジ問題が無いため、ユニットテストと doctest だけで検証しています。
+- verify:
+  - `fibonacci_matrix_pow` — [yukicoder No.786 京都大学の過去問](https://yukicoder.me/problems/no/786)
+  - `Fibonacci` — [yukicoder No.195 フィボナッチ数列の理解(2)](https://yukicoder.me/problems/no/195)
 
 第 `n` 項だけが欲しい [`fibonacci_matrix_pow`](#fibonacci_matrix_pow) と、
 先頭から順に列挙する [`Fibonacci`](#fibonacci) の 2 つがあります。
@@ -100,6 +102,79 @@ use fibonacci::Fibonacci;
 let lucas = Fibonacci { a: 2, b: 1 };
 assert_eq!(lucas.take(6).collect::<Vec<_>>(), vec![1, 3, 4, 7, 11, 18]);
 ```
+
+## verify
+
+yukicoder 2 問で検証しています。
+
+### yukicoder No.786 京都大学の過去問
+
+[No.786 京都大学の過去問](https://yukicoder.me/problems/no/786) は、
+`N` 段の階段を 1 歩 1 段または 2 段で昇る方法が何通りあるかを答える問題です。
+
+`n` 段目に来る直前は `n - 1` 段目か `n - 2` 段目なので、
+通り数を `f(n)` とすると `f(n) = f(n - 1) + f(n - 2)` になります。
+`f(1) = 1`、`f(2) = 2` なので `f(n) = F(n + 1)` です。
+
+```rust
+use fibonacci::fibonacci_matrix_pow;
+
+assert_eq!(fibonacci_matrix_pow(3 + 1), 3);
+assert_eq!(fibonacci_matrix_pow(9 + 1), 55);
+```
+
+欲しいのが 1 項だけなので、列挙せずに行列累乗で求めています。
+`N <= 50` で `F(51) = 20365011074` なので、32 bit 整数には収まりません。
+
+実際の verify コードは
+[`verify/src/bin/yukicoder-786.rs`](https://github.com/topi-banana/library/blob/main/verify/src/bin/yukicoder-786.rs)
+です。
+
+### yukicoder No.195 フィボナッチ数列の理解(2)
+
+[No.195 フィボナッチ数列の理解(2)](https://yukicoder.me/problems/no/195) は、
+`F(1) = A`、`F(2) = B` から同じ漸化式で伸ばした「`(A, B)` フィボナッチ数列」が
+与えられた `X, Y, Z` をすべて含むような正整数の対 `(A, B)` のうち、
+辞書順最小のものを答える問題です。
+
+初項を変えられる `Fibonacci` がそのまま使えます。
+ただし最初に返るのは `b` (第 2 項) なので、`a` を頭に付けて添字を揃えます。
+
+```rust
+use fibonacci::Fibonacci;
+
+// (1, 3) フィボナッチ数列の第 1 項から
+let (a, b) = (1, 3);
+let terms: Vec<_> = std::iter::once(a).chain(Fibonacci { a, b }).take(6).collect();
+assert_eq!(terms, vec![1, 3, 4, 7, 11, 18]);
+```
+
+第 `k` 項は `F_{A,B}(k) = F(k - 2) · A + F(k - 1) · B` と書けます
+(`F(-1) = 1`、`F(0) = 0` と読みます)。
+`A, B >= 1` より `F_{A,B}(k) >= F(k)` で、[`Fibonacci` の例](#fibonacci)で見たとおり
+`F(45) = 1134903170 > 10^9` なので、`10^9` 以下の値が入るのは第 44 項までです。
+
+`X, Y, Z` から重複を除いて 2 値以上が残るなら、その中の相異なる 2 値を取ります。
+同じ値が数列に 2 回現れるのは `A = B` のときの第 1, 2 項だけ
+(第 2 項以降は `A >= 1` より狭義単調増加) なので、
+相異なる 2 値は必ず別の添字 `i != j` に入ります。そこで `i`、`j` を決め打ちすると、
+
+```text
+F(i - 2)·A + F(i - 1)·B = (最小の値)
+F(j - 2)·A + F(j - 1)·B = (次に小さい値)
+```
+
+という連立方程式になります。行列式は `±F(|i - j|)` で `i != j` なら `0` にならないため、
+`(A, B)` が一意に定まります。答えの `(A, B)` は必ずどれかの `(i, j)` に対応するので、
+`44 * 43` 通りの `(i, j)` をすべて試し、得られた `(A, B)` で実際に数列を並べて
+残りの値も含むかを確かめれば、条件を満たすもの全体が漏れなく列挙できます。
+
+`X = Y = Z` のときだけは 2 値が取れませんが、`(A, B) = (1, X)` が必ず `X` を含むので
+`A = 1` で確定し、`X = F(k - 2) + F(k - 1)·B` を満たす最小の `B` を探すだけになります。
+
+実際の verify コードは
+[`verify/src/bin/yukicoder-195.rs`](https://github.com/topi-banana/library/blob/main/verify/src/bin/yukicoder-195.rs)
+です。
 
 ## オーバーフロー
 
