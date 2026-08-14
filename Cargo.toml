@@ -10,6 +10,7 @@ license = "CC0-1.0"
 publish = false
 
 [workspace.dependencies]
+permutation = { path = "crates/permutation" }
 proconio = "0.6.0"
 rle = { path = "crates/rle" }
 
