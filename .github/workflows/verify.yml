@@ -43,7 +43,16 @@ jobs:
       # oj-resolve は依存解決のために `cargo metadata` と
       # `cargo check --workspace --all-targets` を実行するため、
       # 解決の段階でも Rust ツールチェインが必要になる。
+      #
+      # さらに config.toml で list_dependencies_backend に "cargo-udeps" を
+      # 指定しているため、`rustup run nightly cargo udeps` が動く必要がある。
+      # dtolnay/rust-toolchain は入れたツールチェインを default にするので、
+      # stable を後ろに置いて default を stable のままにしておく。
+      - uses: dtolnay/rust-toolchain@nightly
       - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-udeps
       - uses: Swatinem/rust-cache@v2
 
       - name: oj-resolve
