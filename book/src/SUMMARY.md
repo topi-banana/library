@@ -10,6 +10,8 @@
   - [Rle — 連長圧縮](./seq/rle.md)
 - [組合せ](./comb/index.md)
   - [Permutation — 順列](./comb/permutation.md)
+- [集合](./set/index.md)
+  - [Ranges — 半開区間の集合](./set/ranges.md)
 - [クエリ](./query/index.md)
   - [Mo — Mo's algorithm](./query/mo.md)
 
