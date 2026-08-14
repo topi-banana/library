@@ -31,5 +31,6 @@ dependencies = [
  "mo",
  "permutation",
  "proconio",
+ "ranges",
  "rle",
 ]
