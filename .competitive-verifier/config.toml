@@ -1,8 +1,17 @@
 # competitive-verifier (oj-resolve) の設定。
 #
-# kind = "none" のとき、依存関係は `cargo metadata` と
-# `cargo check --workspace --all-targets` が出力する dep-info から解決される。
-# "cargo-udeps" にすると未使用依存を除いたより厳密な解決になるが、
-# nightly ツールチェインと cargo-udeps のインストールが必要になる。
+# 依存解決は `cargo metadata` をもとにパッケージ単位で行われるため、
+# kind = "none" だと verify パッケージの全バイナリが、そのパッケージが
+# 依存する全ライブラリクレートに依存していることになってしまう。
+# ("Depends on" と "Verified with" に無関係なファイルが並ぶ)
+#
+# "cargo-udeps" にすると、バイナリごとに `cargo udeps --bin <name>` を実行して
+# 未使用の依存を取り除くため、実際に使っているクレートだけが依存として残る。
+# 代わりに nightly ツールチェインと cargo-udeps が必要になるので、
+# verify ワークフローの解決ジョブでそれらを用意している。
+#
+# なお cargo-udeps はマクロ経由やドキュメントテストからの利用を検出できず、
+# 使っている依存を「未使用」と誤判定することがある。その場合は該当クレートの
+# Cargo.toml に `package.metadata.cargo-udeps.ignore` を書いて除外する。
 [languages.rust.list_dependencies_backend]
-kind = "none"
+kind = "cargo-udeps"
