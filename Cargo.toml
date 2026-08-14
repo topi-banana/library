@@ -11,6 +11,7 @@ publish = false
 
 [workspace.dependencies]
 div_conquer = { path = "crates/div_conquer" }
+fibonacci = { path = "crates/fibonacci" }
 kmp = { path = "crates/kmp" }
 mo = { path = "crates/mo" }
 permutation = { path = "crates/permutation" }

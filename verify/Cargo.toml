@@ -8,6 +8,7 @@ license.workspace = true
 
 [dependencies]
 div_conquer.workspace = true
+fibonacci.workspace = true
 kmp.workspace = true
 mo.workspace = true
 permutation.workspace = true

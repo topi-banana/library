@@ -41,6 +41,7 @@ name = "verify"
 version = "0.1.0"
 dependencies = [
  "div_conquer",
+ "fibonacci",
  "kmp",
  "mo",
  "permutation",
