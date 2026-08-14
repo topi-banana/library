@@ -17,6 +17,8 @@
 - [クエリ](./query/index.md)
   - [DivConquer — 平方分割](./query/div_conquer.md)
   - [Mo — Mo's algorithm](./query/mo.md)
+- [数学](./math/index.md)
+  - [Fibonacci — フィボナッチ数列](./math/fibonacci.md)
 
 ---
 
