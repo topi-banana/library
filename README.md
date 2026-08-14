@@ -17,6 +17,7 @@
 library/
 ├── crates/                 各アルゴリズムの crate
 │   ├── div_conquer/        平方分割 (ブロック分割による区間クエリ)
+│   ├── kmp/                Knuth-Morris-Pratt 法 (列の検索)
 │   ├── mo/                 Mo's algorithm (区間クエリのオフライン処理)
 │   ├── permutation/        順列 (辞書順の遷移と全列挙)
 │   ├── ranges/             半開区間の集合 (統合・削除・被覆判定)
