@@ -8,6 +8,8 @@
 
 - [列](./seq/index.md)
   - [Rle — 連長圧縮](./seq/rle.md)
+- [組合せ](./comb/index.md)
+  - [Permutation — 順列](./comb/permutation.md)
 
 ---
 
