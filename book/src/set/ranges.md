@@ -4,7 +4,11 @@
 区間を追加・削除するたびに、重なった区間や接した区間は 1 本にまとめられます。
 
 - 実装: [`crates/ranges/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/ranges/src/lib.rs)
-- verify: 対応するジャッジ問題が無いため、ユニットテストのみ
+- verify:
+  - `Ranges` — [yukicoder No.674 n連勤](https://yukicoder.me/problems/no/674), [yukicoder No.2292 Interval Union Find](https://yukicoder.me/problems/no/2292)
+
+`ImmutableRanges` は対応するジャッジ問題が無いため、ユニットテストだけで検証しています。
+`Ranges` と同じ問い合わせしか持たないので、`Ranges` 側の verify で挙動は保証されます。
 
 `1..3` と `3..5` は端点が接しているので `1..5` にまとまります。
 一方 `1..2` と `3..4` は離れているため別々のままです。
@@ -90,6 +94,40 @@ r.insert("m".to_string().."z".to_string());
 assert_eq!(r.len(), 1);
 assert!(r.contains(&"q".to_string()));
 ```
+
+### 一直線に並んだ連結成分を持つ
+
+数直線上の連結成分を管理するときは、**頂点ではなく辺を区間にします**。
+頂点 `v` と `v + 1` を結ぶ辺に番号 `v` を振ると、辺 `start..end` が 1 本の区間である
+ことと、頂点 `start..=end` が 1 つの成分であることが対応します。
+
+頂点側を区間にすると、隣り合う別々の成分 (例えば `{1,2,3}` と `{4,5}`) が
+`1..4` と `4..6` になって接するため、`insert` が 1 本に統合してしまいます。
+辺側なら 2 つの区間が接するにはその頂点を両方の成分が共有していなければならず、
+そのようなことは起こりません。
+
+```rust
+use ranges::Ranges;
+
+// 頂点 1..=6 のうち {1,2,3} と {5,6} が繋がっている状態
+let edges: Ranges<u32> = [1..3, 5..6].into_iter().collect();
+
+// 頂点 u, v が連結か
+assert!(edges.contains_range(&(1..3)));
+assert!(!edges.contains_range(&(3..5)));
+
+// 頂点 v を含む成分の大きさ。成分の右端は辺が無いので左隣も見る
+let size = |v: u32| match edges.covering(&v).or_else(|| edges.covering(&(v - 1))) {
+    Some((start, end)) => end - start + 1,
+    None => 1,
+};
+assert_eq!(size(2), 3);
+assert_eq!(size(3), 3); // 右端の頂点
+assert_eq!(size(4), 1); // 孤立点は区間に現れない
+```
+
+`remove(l..r)` は「頂点 `l` と `r` の間を切り離す」操作になり、
+跨いでいた成分が 2 つに割れます。
 
 ## ImmutableRanges
 
