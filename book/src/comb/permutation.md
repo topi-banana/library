@@ -5,7 +5,11 @@
 多重集合から長さ `len` の順列をまとめて作る `permutation` です。
 
 - 実装: [`crates/permutation/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/permutation/src/lib.rs)
-- verify: なし (対応するジャッジ問題が無いため、ユニットテストと doctest だけで検証しています)
+- verify:
+  - `next_permutation` — [yukicoder No.270 next_permutation (1)](https://yukicoder.me/problems/no/270), [yukicoder No.1051 PQ Permutation](https://yukicoder.me/problems/no/1051)
+  - `prev_permutation` — [yukicoder No.927 Second Permutation](https://yukicoder.me/problems/no/927)
+
+`permutation` は対応するジャッジ問題が無いため、ユニットテストと doctest だけで検証しています。
 
 ## API
 
