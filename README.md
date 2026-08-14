@@ -16,8 +16,10 @@
 ```text
 library/
 ├── crates/                 各アルゴリズムの crate
+│   ├── div_conquer/        平方分割 (ブロック分割による区間クエリ)
 │   ├── mo/                 Mo's algorithm (区間クエリのオフライン処理)
 │   ├── permutation/        順列 (辞書順の遷移と全列挙)
+│   ├── ranges/             半開区間の集合 (統合・削除・被覆判定)
 │   └── rle/                連長圧縮 (Run-Length Encoding)
 ├── verify/src/bin/         ジャッジの 1 問 = 1 バイナリ
 ├── book/                   解説ドキュメント (mdBook)

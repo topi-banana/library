@@ -3,6 +3,10 @@
 version = 4
 
 [[package]]
+name = "div_conquer"
+version = "0.1.0"
+
+[[package]]
 name = "mo"
 version = "0.1.0"
 
@@ -28,6 +32,7 @@ version = "0.1.0"
 name = "verify"
 version = "0.1.0"
 dependencies = [
+ "div_conquer",
  "mo",
  "permutation",
  "proconio",

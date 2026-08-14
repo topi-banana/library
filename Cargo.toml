@@ -10,6 +10,7 @@ license = "CC0-1.0"
 publish = false
 
 [workspace.dependencies]
+div_conquer = { path = "crates/div_conquer" }
 mo = { path = "crates/mo" }
 permutation = { path = "crates/permutation" }
 proconio = "0.6.0"
