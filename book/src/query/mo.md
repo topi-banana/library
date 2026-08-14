@@ -5,8 +5,12 @@
 「区間の端を 1 要素だけ動かす」操作が軽い問題に使えます。
 
 - 実装: [`crates/mo/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/mo/src/lib.rs)
-- verify: [yukicoder No.1471 Sort Queries](https://yukicoder.me/problems/no/1471),
-  [yukicoder No.924 紲星](https://yukicoder.me/problems/no/924)
+- verify:
+  - Library Checker: [Static Range Inversions Query](https://judge.yosupo.jp/problem/static_range_inversions_query),
+    [Static Range Count Distinct](https://judge.yosupo.jp/problem/static_range_count_distinct),
+    [Static Range Mode Query](https://judge.yosupo.jp/problem/static_range_mode_query)
+  - yukicoder: [No.1471 Sort Queries](https://yukicoder.me/problems/no/1471),
+    [No.924 紲星](https://yukicoder.me/problems/no/924)
 
 区間内の異なる値の個数、転倒数、モードなど、
 「要素を 1 個足す / 1 個引く」が `O(1)` や `O(log n)` でできて、
@@ -130,9 +134,59 @@ assert_eq!(*mo.execute(&mut state), [2, 3, 1]);
 
 ## verify
 
-yukicoder の 2 問で検証しています。
+Library Checker 3 問と yukicoder 2 問で検証しています。
 
-### No.1471 Sort Queries
+### Library Checker: Static Range Inversions Query
+
+[Static Range Inversions Query](https://judge.yosupo.jp/problem/static_range_inversions_query)
+は区間の転倒数を答える問題です。
+5 問のうち、`add_l` と `add_r` の処理が変わるのはこの問題だけで、
+トレイトの左右の非対称性を実際に踏むのはここになります。
+左端に入る要素が作る転倒は「区間内の自分より小さい要素」との組、
+右端に入る要素が作る転倒は「区間内の自分より大きい要素」との組です。
+個数を Fenwick tree に載せ、どちらも `O(log n)` で数えています。
+
+`del_l` / `del_r` では先に Fenwick tree から取り除いてから打ち消します。
+順序を逆にすると、取り除く要素自身を数えてしまいます。
+
+実際の verify コードは
+[`verify/src/bin/library-checker-static-range-inversions-query.rs`](https://github.com/topi-banana/library/blob/main/verify/src/bin/library-checker-static-range-inversions-query.rs)
+です。
+
+### Library Checker: Static Range Count Distinct
+
+[Static Range Count Distinct](https://judge.yosupo.jp/problem/static_range_count_distinct)
+は区間に現れる相異なる値の個数を答える問題で、上の[使用例](#使用例)そのものです。
+
+`N, Q <= 5 * 10^5` と 5 問の中では最も大きく、端の移動は 3 * 10^8 回を超えます。
+1 回あたりの処理は「順位を引いて個数を 1 増減する」だけなので、
+実行時間はほぼメモリアクセスで決まります。
+順位と個数を `u32` で持ち、内側のループが触る配列を小さくしています。
+
+`l == r` の空クエリが来るのもこの問題だけです。
+`execute` は区間を広げてから縮めるので、空区間を経由しても壊れません。
+
+実際の verify コードは
+[`verify/src/bin/library-checker-static-range-count-distinct.rs`](https://github.com/topi-banana/library/blob/main/verify/src/bin/library-checker-static-range-count-distinct.rs)
+です。
+
+### Library Checker: Static Range Mode Query
+
+[Static Range Mode Query](https://judge.yosupo.jp/problem/static_range_mode_query)
+は区間の最頻値とその出現回数を答える問題です。
+
+「個数の最大値だけを覚えておく」実装は誤りになります。
+最大個数を持つ値が複数あるとき、そのうち 1 つを `del` で減らしても最大値は変わらないため、
+覚えていた最頻値だけが古くなるからです。
+そこで順位を個数の昇順に並べた配列を持ち、その末尾を最頻値としています。
+同じ個数の順位は配列上で連続した 1 ブロックを占めるので、
+`add` / `del` は「ブロックの端と入れ替えて境界を 1 ずらす」だけで済み、`O(1)` です。
+
+実際の verify コードは
+[`verify/src/bin/library-checker-static-range-mode-query.rs`](https://github.com/topi-banana/library/blob/main/verify/src/bin/library-checker-static-range-mode-query.rs)
+です。
+
+### yukicoder No.1471 Sort Queries
 
 [No.1471 Sort Queries](https://yukicoder.me/problems/no/1471) は、
 部分文字列 `S[L..R]` を並べ替えた辞書順最小の文字列の `X` 文字目を答える問題です。
@@ -150,7 +204,7 @@ yukicoder の 2 問で検証しています。
 [`verify/src/bin/yukicoder-1471.rs`](https://github.com/topi-banana/library/blob/main/verify/src/bin/yukicoder-1471.rs)
 です。
 
-### No.924 紲星
+### yukicoder No.924 紲星
 
 [No.924 紲星](https://yukicoder.me/problems/no/924) は、
 区間に対して `f(x) = Σ|x - A_k|` の最小値を答える問題です。
