@@ -14,6 +14,7 @@ CI で正当性を検証しています。
 library/
 ├── crates/          各アルゴリズムの crate
 │   ├── div_conquer/
+│   ├── fibonacci/
 │   ├── kmp/
 │   ├── mo/
 │   ├── permutation/
