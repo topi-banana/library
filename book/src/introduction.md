@@ -13,8 +13,10 @@ CI で正当性を検証しています。
 ```text
 library/
 ├── crates/          各アルゴリズムの crate
+│   ├── div_conquer/
 │   ├── mo/
 │   ├── permutation/
+│   ├── ranges/
 │   └── rle/
 ├── verify/          ジャッジの 1 問 = 1 バイナリ
 │   └── src/bin/
