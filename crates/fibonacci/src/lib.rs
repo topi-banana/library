@@ -30,12 +30,10 @@
 /// # Panics
 ///
 /// 途中の計算が [`u128`] に収まらないとき、オーバーフロー検査が有効なビルド
-/// (debug ビルド) では panic する。内部で持つ行列を必要より 1 回多く二乗するため、
-/// `F(n)` 自体が収まるかどうかとは関係なく `n >= 129` で panic する。
+/// (debug ビルド) では panic する。あふれるのは `F(n)` 自体が収まらないときだけなので、
+/// `n <= 186` なら panic しない。
 ///
-/// 検査が無効なビルド (release ビルド) では `2^128` を法とした値になり、
-/// 使われない二乗のあふれは結果に影響しないため、
-/// `F(n)` が収まる `n <= 186` までは正しい値が返る。
+/// 検査が無効なビルド (release ビルド) では `2^128` を法とした値になる。
 ///
 /// # Examples
 ///
@@ -67,8 +65,11 @@ pub fn fibonacci_matrix_pow(n: usize) -> u128 {
             if n % 2 == 1 {
                 result = matrix_multiply(result, base);
             }
-            base = matrix_multiply(base, base);
             n /= 2;
+            // 最後の 1 周で二乗しても結果には使われず、あふれるだけなので飛ばす。
+            if n > 0 {
+                base = matrix_multiply(base, base);
+            }
         }
         result
     }
@@ -155,6 +156,24 @@ mod tests {
         let mut fib = Fibonacci { a: 0, b: 1 };
         for n in test_case_set() {
             assert_eq!(fib.next().unwrap(), n as u128);
+        }
+    }
+
+    // u128 に収まる最大の項。行列を余分に二乗していると、ここに届く前に panic する。
+    #[test]
+    fn test_fibonacci_matrix_pow_upper_bound() {
+        assert_eq!(
+            fibonacci_matrix_pow(186),
+            332825110087067562321196029789634457848
+        );
+    }
+
+    // イテレータが panic せずに返せる F(185) までを突き合わせる。
+    #[test]
+    fn test_fibonacci_iter_matches_matrix_pow() {
+        let fib = Fibonacci { a: 0, b: 1 };
+        for (i, f) in fib.take(185).enumerate() {
+            assert_eq!(f, fibonacci_matrix_pow(i + 1));
         }
     }
 }
