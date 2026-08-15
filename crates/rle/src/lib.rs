@@ -1,38 +1,3 @@
-//! 連長圧縮 (Run-Length Encoding)。
-//!
-//! 列を「同じ値が連続する区間」ごとに `(値, 連続する個数)` へまとめる。
-//!
-//! 一括で [`Vec`] を作る [`rle`] と、遅延評価のイテレータアダプタ [`Rle::rle`] がある。
-//!
-//! ```
-//! use rle::Rle;
-//!
-//! assert_eq!(
-//!     rle::rle(&mut "aaabbc".chars()),
-//!     vec![('a', 3), ('b', 2), ('c', 1)]
-//! );
-//!
-//! let mut iter = "aaabbc".chars().rle();
-//! assert_eq!(iter.next(), Some(('a', 3)));
-//! assert_eq!(iter.next(), Some(('b', 2)));
-//! assert_eq!(iter.next(), Some(('c', 1)));
-//! assert_eq!(iter.next(), None);
-//! ```
-
-/// 列を連長圧縮し、`(値, 連続する個数)` を並べた [`Vec`] を返す。
-///
-/// 元の列の長さを `n` として `O(n)` 時間。返る [`Vec`] の長さは連続する区間の個数で、
-/// 高々 `n` になる。空の列に対しては空の [`Vec`] を返す。
-///
-/// # Examples
-///
-/// ```
-/// assert_eq!(
-///     rle::rle(&mut [1, 1, 2, 1].into_iter()),
-///     vec![(1, 2), (2, 1), (1, 1)]
-/// );
-/// assert!(rle::rle(&mut std::iter::empty::<u8>()).is_empty());
-/// ```
 pub fn rle<T: Iterator<Item = I>, I: PartialEq>(iter: &mut T) -> Vec<(I, usize)> {
     let mut res = Vec::new();
     let Some(mut pre) = iter.next() else {
