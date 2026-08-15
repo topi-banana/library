@@ -3,7 +3,7 @@
 use proconio::input;
 use std::io::{BufWriter, Write};
 
-use div_conquer::DivConquer;
+use div_conquer::ImmutableDivConquer;
 
 /// ブロック長。
 ///
@@ -60,7 +60,15 @@ fn main() {
         queries: [(usize, usize, i64); q],
     }
 
-    let dc = DivConquer::<B, _, _, _, _>::new(a, cacher, resolver, cache_resolver, merger);
+    let mut cache = Vec::new();
+    let dc = ImmutableDivConquer::<B, _, _, _, _>::new(
+        &a,
+        &mut cache,
+        cacher,
+        resolver,
+        cache_resolver,
+        merger,
+    );
 
     let stdout = std::io::stdout();
     let mut out = BufWriter::new(stdout.lock());
