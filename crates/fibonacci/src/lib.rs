@@ -27,19 +27,15 @@ pub fn fibonacci_matrix_pow(n: usize) -> u128 {
     result[0][0]
 }
 
-pub struct Fibonacci {
-    pub a: u128,
-    pub b: u128,
-}
-impl Iterator for Fibonacci {
-    type Item = u128;
+pub struct Fibonacci<T>(pub T, pub T);
+
+impl<T: std::ops::AddAssign + Clone> Iterator for Fibonacci<T> {
+    type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let na = self.b;
-        let nb = self.a + self.b;
-        self.a = na;
-        self.b = nb;
-        Some(self.a)
+        self.0 += self.1.clone();
+        std::mem::swap(&mut self.0, &mut self.1);
+        Some(self.0.clone())
     }
 }
 
@@ -60,7 +56,7 @@ mod tests {
 
     #[test]
     fn test_fibonacci_iter() {
-        let mut fib = Fibonacci { a: 0, b: 1 };
+        let mut fib = Fibonacci(0, 1);
         for n in test_case_set() {
             assert_eq!(fib.next().unwrap(), n as u128);
         }
@@ -75,7 +71,7 @@ mod tests {
     // イテレータが panic せずに返せる F(185) までを突き合わせる。
     #[test]
     fn test_fibonacci_iter_matches_matrix_pow() {
-        let fib = Fibonacci { a: 0, b: 1 };
+        let fib = Fibonacci(0, 1);
         for (i, f) in fib.take(185).enumerate() {
             assert_eq!(f, fibonacci_matrix_pow(i + 1));
         }
