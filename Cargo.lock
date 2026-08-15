@@ -37,6 +37,10 @@ name = "rle"
 version = "0.1.0"
 
 [[package]]
+name = "vec2d"
+version = "0.1.0"
+
+[[package]]
 name = "verify"
 version = "0.1.0"
 dependencies = [
