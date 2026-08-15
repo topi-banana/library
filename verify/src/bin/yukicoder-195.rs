@@ -14,10 +14,7 @@ const LIMIT: usize = 45;
 /// `(A, B)` フィボナッチ数列の第 1 項から第 `LIMIT` 項まで。
 fn terms(a: u128, b: u128) -> Vec<u128> {
     // Fibonacci が最初に返すのは b (= F(2)) なので、a を頭に付けて添字を揃える。
-    std::iter::once(a)
-        .chain(Fibonacci { a, b })
-        .take(LIMIT)
-        .collect()
+    std::iter::once(a).chain(Fibonacci { a, b }).take(LIMIT).collect()
 }
 
 /// 第 `k` 項を `F_{A,B}(k) = c_k · A + d_k · B` と書いたときの係数 `(c_k, d_k)`。

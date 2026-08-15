@@ -107,10 +107,7 @@ fn main() {
     let mut vals = a.clone();
     vals.sort_unstable();
     vals.dedup();
-    let rank = a
-        .iter()
-        .map(|v| vals.binary_search(v).unwrap())
-        .collect::<Vec<_>>();
+    let rank = a.iter().map(|v| vals.binary_search(v).unwrap()).collect::<Vec<_>>();
 
     let m = vals.len();
     let width = m.isqrt().max(1);

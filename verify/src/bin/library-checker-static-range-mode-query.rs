@@ -90,23 +90,14 @@ fn main() {
     let mut vals = a.clone();
     vals.sort_unstable();
     vals.dedup();
-    let rank = a
-        .iter()
-        .map(|v| vals.binary_search(v).unwrap())
-        .collect::<Vec<_>>();
+    let rank = a.iter().map(|v| vals.binary_search(v).unwrap()).collect::<Vec<_>>();
 
     let m = vals.len();
     // はじめはどの値も 0 個なので、全体が個数 0 のブロック 1 つになる。
     let mut start = vec![m; n + 1];
     start[0] = 0;
-    let mut state = Mode {
-        vals,
-        rank,
-        cnt: vec![0; m],
-        order: (0..m).collect(),
-        pos: (0..m).collect(),
-        start,
-    };
+    let mut state =
+        Mode { vals, rank, cnt: vec![0; m], order: (0..m).collect(), pos: (0..m).collect(), start };
 
     let mut mo = Mo::new();
     for (l, r) in queries {

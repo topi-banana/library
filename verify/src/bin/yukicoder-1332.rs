@@ -48,11 +48,7 @@ fn cache_resolver(sorted: &Cache, &x: &i32) -> Dist {
     // `x` 以上の最小の座標のどちらかに限られる。
     let k = sorted.partition_point(|&v| v < x);
     let left = if k > 0 { x - sorted[k - 1] } else { i32::MAX };
-    let right = if k < sorted.len() {
-        sorted[k] - x
-    } else {
-        i32::MAX
-    };
+    let right = if k < sorted.len() { sorted[k] - x } else { i32::MAX };
     Dist(left.min(right))
 }
 

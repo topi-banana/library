@@ -163,14 +163,9 @@ impl Mo {
             let sub_square_size = 1usize << ((pow << 1) - 2);
             let ans = seg * sub_square_size;
             let add = hilbert_order(nx, ny, pow - 1, nrot);
-            if seg == 1 || seg == 2 {
-                ans + add
-            } else {
-                ans + sub_square_size - add - 1
-            }
+            if seg == 1 || seg == 2 { ans + add } else { ans + sub_square_size - add - 1 }
         }
-        self.queries
-            .sort_by_cached_key(|&(l, r, _)| hilbert_order(l, r, S::MAX_INDEX_POW2, 0));
+        self.queries.sort_by_cached_key(|&(l, r, _)| hilbert_order(l, r, S::MAX_INDEX_POW2, 0));
 
         let mut ans = vec![S::Ans::default(); self.queries.len()].into_boxed_slice();
         let (mut nl, mut nr) = (0, 0);

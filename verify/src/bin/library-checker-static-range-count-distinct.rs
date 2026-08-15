@@ -68,16 +68,9 @@ fn main() {
     let mut vals = a.clone();
     vals.sort_unstable();
     vals.dedup();
-    let rank = a
-        .iter()
-        .map(|v| vals.binary_search(v).unwrap() as u32)
-        .collect::<Vec<_>>();
+    let rank = a.iter().map(|v| vals.binary_search(v).unwrap() as u32).collect::<Vec<_>>();
 
-    let mut state = Distinct {
-        rank,
-        cnt: vec![0; vals.len()],
-        distinct: 0,
-    };
+    let mut state = Distinct { rank, cnt: vec![0; vals.len()], distinct: 0 };
 
     let mut mo = Mo::new();
     for (l, r) in queries {

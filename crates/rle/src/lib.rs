@@ -82,11 +82,7 @@ pub trait Rle: Iterator + Sized {
     {
         let pre = self.next();
         let cnt = usize::from(pre.is_some());
-        RleIter {
-            iter: self,
-            pre,
-            cnt,
-        }
+        RleIter { iter: self, pre, cnt }
     }
 }
 
@@ -160,10 +156,7 @@ mod tests {
     #[test]
     fn function_and_adapter_agree() {
         let xs = [3, 3, 1, 1, 1, 4, 1, 5, 5, 5, 5, 9, 2, 2];
-        assert_eq!(
-            rle(&mut xs.into_iter()),
-            xs.into_iter().rle().collect::<Vec<_>>()
-        );
+        assert_eq!(rle(&mut xs.into_iter()), xs.into_iter().rle().collect::<Vec<_>>());
     }
 
     #[test]

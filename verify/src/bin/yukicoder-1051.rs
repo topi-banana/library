@@ -41,11 +41,7 @@ fn main() {
     let mut suf_max_not_q = vec![0usize; n + 1];
     for (i, &x) in a.iter().enumerate().rev() {
         suf_max[i] = suf_max[i + 1].max(x);
-        suf_max_not_q[i] = if x == q {
-            suf_max_not_q[i + 1]
-        } else {
-            suf_max_not_q[i + 1].max(x)
-        };
+        suf_max_not_q[i] = if x == q { suf_max_not_q[i + 1] } else { suf_max_not_q[i + 1].max(x) };
     }
 
     // b は a と先頭 i 要素を共有し b[i] > a[i] となる形しかない。
@@ -61,18 +57,13 @@ fn main() {
     let mut found = None;
     if pos_p < pos_q {
         // i > pos_p では q の制約が付かないので、a[i] より大きい値が後ろにある最大の i でよい。
-        found = (pos_p + 1..n)
-            .rev()
-            .find(|&i| a[i] < suf_max[i + 1])
-            .map(|i| (i, false));
+        found = (pos_p + 1..n).rev().find(|&i| a[i] < suf_max[i + 1]).map(|i| (i, false));
     }
     if found.is_none() {
         // 残るのは i <= min(pos_p, pos_q)。b[i] に q は置けないので、
         // a[i] より大きい q 以外の値が後ろにあることを条件にする。
-        found = (0..=pos_p.min(pos_q))
-            .rev()
-            .find(|&i| a[i] < suf_max_not_q[i + 1])
-            .map(|i| (i, true));
+        found =
+            (0..=pos_p.min(pos_q)).rev().find(|&i| a[i] < suf_max_not_q[i + 1]).map(|i| (i, true));
     }
 
     let stdout = std::io::stdout();

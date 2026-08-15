@@ -12,9 +12,7 @@ struct Fenwick {
 
 impl Fenwick {
     fn new(n: usize) -> Self {
-        Self {
-            tree: vec![0; n + 1],
-        }
+        Self { tree: vec![0; n + 1] }
     }
     /// 位置 `i` の個数を 1 増やす。
     fn add(&mut self, i: usize) {
@@ -107,17 +105,9 @@ fn main() {
     let mut vals = a.clone();
     vals.sort_unstable();
     vals.dedup();
-    let rank = a
-        .iter()
-        .map(|v| vals.binary_search(v).unwrap())
-        .collect::<Vec<_>>();
+    let rank = a.iter().map(|v| vals.binary_search(v).unwrap()).collect::<Vec<_>>();
 
-    let mut state = Inversions {
-        rank,
-        bit: Fenwick::new(vals.len()),
-        len: 0,
-        inv: 0,
-    };
+    let mut state = Inversions { rank, bit: Fenwick::new(vals.len()), len: 0, inv: 0 };
 
     let mut mo = Mo::new();
     for (l, r) in queries {

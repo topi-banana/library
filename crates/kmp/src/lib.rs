@@ -82,12 +82,7 @@ impl<'pattern, T: Eq> KMP<'pattern, T> {
     /// assert_eq!(empty.search(b"abc").count(), 0);
     /// ```
     pub fn search<'kmp, 'src>(&'kmp self, text: &'src [T]) -> KMPIter<'kmp, 'pattern, 'src, T> {
-        KMPIter {
-            kmp: self,
-            text,
-            text_index: 0,
-            pattern_index: 0,
-        }
+        KMPIter { kmp: self, text, text_index: 0, pattern_index: 0 }
     }
 }
 /// [`KMP::search`] が返すイテレータ。

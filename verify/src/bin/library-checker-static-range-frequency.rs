@@ -44,11 +44,7 @@ fn resolver(block: &[u32], &x: &u32) -> usize {
 
 fn cache_resolver((uniq, cum): &Cache, &x: &u32) -> usize {
     let k = uniq.partition_point(|&v| v < x);
-    if uniq.get(k) == Some(&x) {
-        (cum[k + 1] - cum[k]) as usize
-    } else {
-        0
-    }
+    if uniq.get(k) == Some(&x) { (cum[k + 1] - cum[k]) as usize } else { 0 }
 }
 
 fn merger(a: usize, b: usize) -> usize {

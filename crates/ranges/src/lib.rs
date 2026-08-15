@@ -41,11 +41,7 @@ impl<T: Ord + Clone> Ranges<T> {
             }
         }
 
-        let absorbed: Vec<T> = self
-            .0
-            .range(&start..=&end)
-            .map(|(s, _)| s.clone())
-            .collect();
+        let absorbed: Vec<T> = self.0.range(&start..=&end).map(|(s, _)| s.clone()).collect();
         for key in absorbed {
             if let Some(e) = self.0.remove(&key)
                 && e > end
@@ -63,11 +59,7 @@ impl<T: Ord + Clone> Ranges<T> {
             return;
         }
 
-        let left = self
-            .0
-            .range(..&start)
-            .next_back()
-            .map(|(s, e)| (s.clone(), e.clone()));
+        let left = self.0.range(..&start).next_back().map(|(s, e)| (s.clone(), e.clone()));
         if let Some((s, e)) = left
             && e > start
         {
@@ -94,10 +86,7 @@ impl<T: Ord> Ranges<T> {
     }
 
     pub fn covering(&self, value: &T) -> Option<(&T, &T)> {
-        self.0
-            .range(..=value)
-            .next_back()
-            .filter(|(_, end)| *end > value)
+        self.0.range(..=value).next_back().filter(|(_, end)| *end > value)
     }
 
     pub fn contains_range(&self, range: &std::ops::Range<T>) -> bool {
@@ -148,9 +137,7 @@ impl<T: Ord + Clone> FromIterator<std::ops::Range<T>> for Ranges<T> {
 impl<T: std::fmt::Debug> std::fmt::Debug for Ranges<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("Ranges ")?;
-        f.debug_set()
-            .entries(self.0.iter().map(|(s, e)| DebugRange(s, e)))
-            .finish()
+        f.debug_set().entries(self.0.iter().map(|(s, e)| DebugRange(s, e))).finish()
     }
 }
 
@@ -232,11 +219,8 @@ impl<T: Ord> From<ImmutableRanges<T>> for Ranges<T> {
 
 impl<T: Ord> FromIterator<std::ops::Range<T>> for ImmutableRanges<T> {
     fn from_iter<I: IntoIterator<Item = std::ops::Range<T>>>(iter: I) -> Self {
-        let mut items: Vec<(T, T)> = iter
-            .into_iter()
-            .filter(|r| r.start < r.end)
-            .map(|r| (r.start, r.end))
-            .collect();
+        let mut items: Vec<(T, T)> =
+            iter.into_iter().filter(|r| r.start < r.end).map(|r| (r.start, r.end)).collect();
         items.sort_unstable_by(|a, b| a.0.cmp(&b.0));
         items.dedup_by(|next, prev| {
             if prev.1 >= next.0 {
@@ -265,9 +249,7 @@ impl<T> IntoIterator for ImmutableRanges<T> {
 impl<T: std::fmt::Debug> std::fmt::Debug for ImmutableRanges<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("ImmutableRanges ")?;
-        f.debug_set()
-            .entries(self.0.iter().map(|(s, e)| DebugRange(s, e)))
-            .finish()
+        f.debug_set().entries(self.0.iter().map(|(s, e)| DebugRange(s, e))).finish()
     }
 }
 
@@ -422,9 +404,8 @@ mod tests {
         #[derive(PartialEq, Eq, PartialOrd, Ord)]
         struct NoClone(i32);
 
-        let r: ImmutableRanges<NoClone> = [NoClone(1)..NoClone(3), NoClone(3)..NoClone(5)]
-            .into_iter()
-            .collect();
+        let r: ImmutableRanges<NoClone> =
+            [NoClone(1)..NoClone(3), NoClone(3)..NoClone(5)].into_iter().collect();
         assert_eq!(r.len(), 1);
     }
 

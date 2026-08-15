@@ -60,10 +60,8 @@ fn main() {
         // 入力は 1-indexed の閉区間、Mo は 0-indexed の半開区間。
         mo.push(l - 1, r);
     }
-    let mut state = LetterCount {
-        s: s.iter().map(|&b| usize::from(b - b'a')).collect(),
-        cnt: [0; 26],
-    };
+    let mut state =
+        LetterCount { s: s.iter().map(|&b| usize::from(b - b'a')).collect(), cnt: [0; 26] };
     let ans = mo.execute(&mut state);
 
     let stdout = std::io::stdout();

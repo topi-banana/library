@@ -26,16 +26,11 @@
 /// assert_eq!(last, [3, 2, 1]);
 /// ```
 pub fn next_permutation<T: Ord>(a: &mut [T]) -> bool {
-    let Some(i) = a
-        .windows(2)
-        .rposition(|w| unsafe { w.get_unchecked(0) < w.get_unchecked(1) })
+    let Some(i) = a.windows(2).rposition(|w| unsafe { w.get_unchecked(0) < w.get_unchecked(1) })
     else {
         return false;
     };
-    let j = a
-        .iter()
-        .rposition(|x| x > unsafe { a.get_unchecked(i) })
-        .unwrap();
+    let j = a.iter().rposition(|x| x > unsafe { a.get_unchecked(i) }).unwrap();
     a.swap(i, j);
     unsafe { a.get_unchecked_mut(i + 1..) }.reverse();
     true
@@ -56,16 +51,11 @@ pub fn next_permutation<T: Ord>(a: &mut [T]) -> bool {
 /// assert_eq!(first, [1, 2, 3]);
 /// ```
 pub fn prev_permutation<T: Ord>(a: &mut [T]) -> bool {
-    let Some(i) = a
-        .windows(2)
-        .rposition(|w| unsafe { w.get_unchecked(0) > w.get_unchecked(1) })
+    let Some(i) = a.windows(2).rposition(|w| unsafe { w.get_unchecked(0) > w.get_unchecked(1) })
     else {
         return false;
     };
-    let j = a
-        .iter()
-        .rposition(|x| x < unsafe { a.get_unchecked(i) })
-        .unwrap();
+    let j = a.iter().rposition(|x| x < unsafe { a.get_unchecked(i) }).unwrap();
     a.swap(i, j);
     unsafe { a.get_unchecked_mut(i + 1..) }.reverse();
     true

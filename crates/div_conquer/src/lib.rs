@@ -178,14 +178,7 @@ impl<const N: usize, E, C, R, A> DivConquer<N, E, C, R, A> {
         merger: fn(R, R) -> R,
     ) -> Self {
         let cache = slice.chunks(N).map(&cacher).collect::<Vec<_>>();
-        Self {
-            slice,
-            cache,
-            cacher,
-            resolver,
-            cache_resolver,
-            merger,
-        }
+        Self { slice, cache, cacher, resolver, cache_resolver, merger }
     }
     /// 区間 `range` に対するクエリを引数 `arg` で解く。
     ///
