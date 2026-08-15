@@ -22,7 +22,8 @@ library/
 │   ├── mo/                 Mo's algorithm (区間クエリのオフライン処理)
 │   ├── permutation/        順列 (辞書順の遷移と全列挙)
 │   ├── ranges/             半開区間の集合 (統合・削除・被覆判定)
-│   └── rle/                連長圧縮 (Run-Length Encoding)
+│   ├── rle/                連長圧縮 (Run-Length Encoding)
+│   └── vec2d/              2 次元配列 (行優先の平坦な Vec で保持)
 ├── verify/src/bin/         ジャッジの 1 問 = 1 バイナリ
 ├── book/                   解説ドキュメント (mdBook)
 ├── .competitive-verifier/  検証ツールの設定と検証状況ページの素材
