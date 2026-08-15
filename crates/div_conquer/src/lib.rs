@@ -25,7 +25,6 @@ impl<const N: usize, E, C, R, A> DivConquer<N, E, C, R, A> {
     }
     pub fn push(&mut self, element: E) {
         self.slice.push(element);
-        // 追加した要素が属するブロック。既存の末尾ブロックに収まらなければ新しく足す。
         let block = (self.slice.len() - 1) / N;
         if block == self.cache.len() {
             self.cache.push(std::mem::MaybeUninit::uninit());
@@ -37,7 +36,6 @@ impl<const N: usize, E, C, R, A> DivConquer<N, E, C, R, A> {
     pub fn pop(&mut self) -> Option<E> {
         let res = self.slice.pop();
         if res.is_some() {
-            // 末尾ブロックが空になったら畳む。残っていれば取り除いた要素の分だけ汚す。
             if self.cache.len() > self.slice.len().div_ceil(N) {
                 self.dirty.pop();
                 self.cache.pop();
@@ -55,7 +53,6 @@ impl<const N: usize, E, C, R, A> DivConquer<N, E, C, R, A> {
         for i in 0..self.dirty.len() {
             if self.dirty[i] {
                 self.dirty[i] = false;
-                // 末尾のブロックは N 個に満たないことがあるので、列の長さで打ち切る。
                 let end = ((i + 1) * N).min(self.slice.len());
                 self.cache[i].write((self.cacher)(&self.slice[i * N..end]));
             }
