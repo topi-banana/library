@@ -25,17 +25,20 @@ impl<const N: usize, E, C, R, A> DivConquer<N, E, C, R, A> {
     }
     pub fn push(&mut self, element: E) {
         self.slice.push(element);
-        if self.slice.len() % N == 1 {
+        // 追加した要素が属するブロック。既存の末尾ブロックに収まらなければ新しく足す。
+        let block = (self.slice.len() - 1) / N;
+        if block == self.cache.len() {
             self.cache.push(std::mem::MaybeUninit::uninit());
             self.dirty.push(true);
         } else {
-            self.dirty[self.slice.len() / N] = true;
+            self.dirty[block] = true;
         }
     }
     pub fn pop(&mut self) -> Option<E> {
         let res = self.slice.pop();
         if res.is_some() {
-            if self.slice.len() % N == 0 {
+            // 末尾ブロックが空になったら畳む。残っていれば取り除いた要素の分だけ汚す。
+            if self.cache.len() > self.slice.len().div_ceil(N) {
                 self.dirty.pop();
                 self.cache.pop();
             } else {
@@ -52,7 +55,9 @@ impl<const N: usize, E, C, R, A> DivConquer<N, E, C, R, A> {
         for i in 0..self.dirty.len() {
             if self.dirty[i] {
                 self.dirty[i] = false;
-                self.cache[i].write((self.cacher)(&self.slice[i * N..][..N]));
+                // 末尾のブロックは N 個に満たないことがあるので、列の長さで打ち切る。
+                let end = ((i + 1) * N).min(self.slice.len());
+                self.cache[i].write((self.cacher)(&self.slice[i * N..end]));
             }
         }
         ImmutableDivConquer {
@@ -130,5 +135,75 @@ impl<'a, const N: usize, E, C, R, A> ImmutableDivConquer<'a, N, E, C, R, A> {
         }
 
         acc
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 区間和を求める `DivConquer` を作る。
+    fn sum<const N: usize>(v: Vec<i64>) -> DivConquer<N, i64, i64, i64, ()> {
+        DivConquer::new(v, |s| s.iter().sum(), |s, _| s.iter().sum(), |c, _| *c, |a, b| a + b)
+    }
+
+    /// 全区間について愚直な区間和と一致することを確かめる。
+    fn assert_all_ranges<const N: usize>(dc: &mut DivConquer<N, i64, i64, i64, ()>, naive: &[i64]) {
+        let im = dc.into_immut();
+        for l in 0..=naive.len() {
+            for r in l..=naive.len() {
+                assert_eq!(
+                    im.resolve(l..r, &()),
+                    naive[l..r].iter().sum::<i64>(),
+                    "range {l}..{r}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn push_crosses_block_boundary() {
+        let mut dc = sum::<4>(vec![]);
+        let mut naive = vec![];
+        for x in 1..=12 {
+            dc.push(x);
+            naive.push(x);
+            assert_all_ranges(&mut dc, &naive);
+        }
+    }
+
+    #[test]
+    fn pop_shrinks_blocks() {
+        let mut naive = (1..=9).collect::<Vec<i64>>();
+        let mut dc = sum::<4>(naive.clone());
+        while let Some(x) = dc.pop() {
+            assert_eq!(Some(x), naive.pop());
+            assert_all_ranges(&mut dc, &naive);
+        }
+        assert!(naive.is_empty());
+    }
+
+    #[test]
+    fn set_rebuilds_partial_last_block() {
+        let mut naive = vec![1; 6];
+        let mut dc = sum::<4>(naive.clone());
+        dc.set(5, 100);
+        naive[5] = 100;
+        assert_all_ranges(&mut dc, &naive);
+    }
+
+    #[test]
+    fn block_size_one() {
+        let mut dc = sum::<1>(vec![]);
+        let mut naive = vec![];
+        for x in 1..=4 {
+            dc.push(x);
+            naive.push(x);
+            assert_all_ranges(&mut dc, &naive);
+        }
+        while dc.pop().is_some() {
+            naive.pop();
+            assert_all_ranges(&mut dc, &naive);
+        }
     }
 }
