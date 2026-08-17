@@ -62,6 +62,9 @@ jobs:
           include: |
             crates
             verify
+          # ユニットテストは検証対象のライブラリではないので、結果ページに載せない。
+          exclude: |
+            crates/*/src/tests.rs
           config: .competitive-verifier/config.toml
 
       - name: Upload verify_files.json
@@ -180,6 +183,9 @@ jobs:
           include: |
             crates
             verify
+          # setup の oj-resolve と同じ除外を指定する。
+          exclude: |
+            crates/*/src/tests.rs
 
       # 次回の実行で --prev-result として使う。
       # フォークからの PR ではキャッシュを書き込めないためスキップする。
