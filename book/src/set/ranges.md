@@ -22,6 +22,8 @@
 `BTreeMap<T, T>` で `start -> end` を持ちます。要素の型に必要な境界は
 更新系が `Ord + Clone`、参照系が `Ord` です。
 
+以下 `n` は保持している区間の**本数**です (区間に入る値の個数ではありません)。
+
 | 項目 | 計算量 | 説明 |
 | --- | --- | --- |
 | `Ranges::new()` | `O(1)` | 空の集合を作る |
@@ -31,11 +33,18 @@
 | `covering(&v)` | `O(log n)` | `v` を含む区間を `Option<(&start, &end)>` で返す |
 | `contains_range(&r)` | `O(log n)` | `r` 全体が 1 本の区間に覆われるか |
 | `overlaps(&r)` | `O(log n)` | `r` がいずれかの区間と少しでも重なるか |
-| `len()` / `is_empty()` | `O(1)` | 保持している区間の**本数** (要素数ではない) |
-| `iter()` | 1 区間あたり `O(1)` | `start` 昇順に `(&start, &end)` を返す |
+| `len()` / `is_empty()` | `O(1)` | 保持している区間の本数 / 空かどうか |
+| `clear()` | `O(n)` | 全区間を捨てて空にする |
+| `iter()` | 1 区間あたり `O(1)` | `start` 昇順に `(&start, &end)` を返す。後ろからも進める |
+| `extend(iter)` | 1 区間あたりならし `O(log n)` | 区間の列を順に `insert` する |
+| `collect()` (`FromIterator`) | 区間 `m` 個で `O(m log m)` | 空の集合に `extend` するのと同じ |
+| `Ranges::from(immutable)` | `O(n)` | [`ImmutableRanges`](#immutableranges) から戻す |
 
 `insert` と `remove` は 1 回の呼び出しで複数の区間を巻き込むことがありますが、
 巻き込まれた区間はその時点で消えるため、ならし計算量は `O(log n)` です。
+
+`Default` (`new()` と同じ) と `Debug` も実装しています。
+`Debug` は区間の集合として `Ranges {1..4, 6..10}` の形で出ます。
 
 `start >= end` の区間は空とみなし、`insert` / `remove` とも何もしません。
 
@@ -142,7 +151,13 @@ assert_eq!(size(4), 1); // 孤立点は区間に現れない
 | `covering_index(&v)` | `O(log n)` | `v` を含む区間の添字を返す |
 | `contains_range(&r)` | `O(log n)` | `r` 全体が 1 本の区間に覆われるか |
 | `overlaps(&r)` | `O(log n)` | `r` がいずれかの区間と少しでも重なるか |
+| `len()` / `is_empty()` | `O(1)` | 保持している区間の本数 / 空かどうか |
 | `as_slice()` / `iter()` | `O(1)` | 内部の `&[(start, end)]` をそのまま見る |
+| `into_iter()` | 1 区間あたり `O(1)` | 所有権ごと `(start, end)` を取り出す |
+| `collect()` (`FromIterator`) | 区間 `m` 個で `O(m log m)` | 整列してから重なりを畳み込む |
+| `ImmutableRanges::from(ranges)` | `O(n)` | [`Ranges`](#ranges) から移す。既に昇順なので整列は要らない |
+
+こちらも `Default` (空) と `Debug` を実装しています。
 
 `Ranges` からは `From` で移せます。逆向きの変換も用意しています。
 
@@ -192,3 +207,4 @@ assert_eq!(frozen.as_slice(), &[(1, 20)]);
 大きな区間が後続を次々に飲み込む形にも対応できます。
 比較を「直前の入力」ではなく「残っている区間」に対して行うのがポイントで、
 `[0..100, 10..20, 30..40]` のような入力が分裂しないのはこのためです。
+
