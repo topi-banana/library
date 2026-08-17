@@ -42,7 +42,8 @@ verify ジョブの結果は `actions/cache` に保存され、次回は `--prev
 実際に使っているかどうかに関わらずすべて記録されます。
 
 ```console
-$ competitive-verifier oj-resolve --include crates verify --config .competitive-verifier/config.toml
+$ competitive-verifier oj-resolve --include crates verify \
+    --exclude 'crates/*/src/tests.rs' --config .competitive-verifier/config.toml
 ```
 
 たとえば `verify/Cargo.toml` に `rle` と `fenwick` の 2 つを書いていると、
@@ -58,6 +59,14 @@ verify/src/bin/yukicoder-1469.rs
 `kind = "cargo-udeps"` に切り替えてください。
 未使用依存が除かれる代わりに、setup ジョブに nightly ツールチェインと
 `cargo-udeps` のインストールが必要になります。
+
+### 検証対象から外すファイル
+
+`oj-resolve` と `docs` の `exclude` に `crates/*/src/tests.rs` を渡しています。
+渡さないと、ユニットテストのファイルもライブラリの 1 つとして解決され、
+検証状況ページに検証されないファイルが crate ごとに並びます。
+`include` と `exclude` は setup と docs-and-check の 2 か所にあるので、
+片方だけ書き換えるとページと検証結果がずれます。
 
 ### 必要なシークレット
 

@@ -30,6 +30,10 @@ library/
 └── .github/workflows/      ci.yml (静的チェック) と verify.yml (検証 + Pages)
 ```
 
+各 crate の `src/lib.rs` にはコンテストへ提出するコードだけを置き、
+ユニットテストは `src/tests.rs` に分けています。
+コンテスト中は `lib.rs` を丸ごとコピーして貼り付けられます。
+
 ## 開発
 
 ```console
