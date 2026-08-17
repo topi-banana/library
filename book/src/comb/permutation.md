@@ -4,7 +4,7 @@
 スライスを辞書順で 1 つ進める / 戻す `next_permutation`・`prev_permutation` と、
 多重集合から長さ `len` の順列をまとめて作る `permutation` です。
 
-- 実装: [`crates/permutation/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/permutation/src/lib.rs)
+- 実装: [`crates/permutation/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/permutation/src/lib.rs) — [全文はこのページの末尾](#ソース)
 - verify:
   - `next_permutation` — [yukicoder No.270 next_permutation (1)](https://yukicoder.me/problems/no/270), [yukicoder No.1051 PQ Permutation](https://yukicoder.me/problems/no/1051)
   - `prev_permutation` — [yukicoder No.927 Second Permutation](https://yukicoder.me/problems/no/927)
@@ -13,11 +13,16 @@
 
 ## API
 
+要素数を `n`、`counts` の種数を `k`、返る順列の個数を `m` とします。
+
 | 項目 | 計算量 | 説明 |
 | --- | --- | --- |
-| `next_permutation(a)` | 最悪 `O(n)`、全列挙では償却 `O(1)` | 辞書順で次に大きい順列へ遷移。最大なら `false` |
-| `prev_permutation(a)` | 最悪 `O(n)`、全列挙では償却 `O(1)` | 辞書順で次に小さい順列へ遷移。最小なら `false` |
-| `permutation(counts, len)` | 出力の総サイズに比例 (`len` が合計個数を超えるときを除く) | 多重集合から長さ `len` の順列を全列挙 |
+| `next_permutation(a)` | 最悪 `O(n)`、全列挙では償却 `O(1)` | `a` を辞書順で次に大きい順列へその場で書き換える。最大なら `false` |
+| `prev_permutation(a)` | 最悪 `O(n)`、全列挙では償却 `O(1)` | `a` を辞書順で次に小さい順列へその場で書き換える。最小なら `false` |
+| `permutation(counts, len)` | `O(m k + m · len)` (`len` が合計個数を超えるときを除く) | 多重集合から長さ `len` の順列を全列挙して `Vec<Vec<T>>` で返す |
+
+`permutation` の `O(m k)` は探索木を辿る分、`O(m · len)` は答えを複製する分です。
+メモリも出力そのもので `O(m · len)` かかります。
 
 前者 2 つは追加のメモリを使わず `a` をその場で書き換えます。
 `permutation` は結果をすべて [`Vec`] にまとめて構築するため、
@@ -241,5 +246,17 @@ assert_eq!(best, 3);
 
 `permutation` の型境界は `Ord + Clone` ですが、内部では要素を clone するだけで
 比較はしていません。出力順が値の大小ではなく `counts` の並び順で決まるのはこのためです。
+
+## ソース
+
+`crates/permutation/src/lib.rs` の全文です。コードブロック右上のボタンでまるごとコピーできます。
+リポジトリのファイルをそのまま埋め込んでいるので、この表示が実装とずれることはありません。
+
+末尾の `#[cfg(test)] mod tests;` はユニットテストを読み込む 2 行です。
+提出先ではテストがコンパイルされないため、貼り付けたままで構いません。
+
+```rust,ignore
+{{#include ../../../crates/permutation/src/lib.rs}}
+```
 
 [`Vec`]: https://doc.rust-lang.org/std/vec/struct.Vec.html

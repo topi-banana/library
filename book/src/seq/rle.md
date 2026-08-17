@@ -3,7 +3,7 @@
 列を「同じ値が連続する区間」ごとに `(値, 連続する個数)` へまとめます。
 元の列の長さを `n` として `O(n)` 時間で、追加のメモリは出力を除いて定数です。
 
-- 実装: [`crates/rle/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/rle/src/lib.rs)
+- 実装: [`crates/rle/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/rle/src/lib.rs) — [全文はこのページの末尾](#ソース)
 - verify: [yukicoder No.1469 programing](https://yukicoder.me/problems/no/1469)
 
 `aaabbc` は `[('a', 3), ('b', 2), ('c', 1)]` になります。
@@ -14,8 +14,9 @@
 
 | 項目 | 計算量 | 説明 |
 | --- | --- | --- |
-| `rle(iter)` | `O(n)` | イテレータを消費し、`Vec<(値, 個数)>` を返す |
-| `Rle::rle(self)` | 1 要素あたり区間の長さに比例 | 連長圧縮した [`RleIter`](#rleiter) を返す |
+| `rle(iter)` | `O(n)` | イテレータを最後まで消費し、`Vec<(値, 個数)>` を返す |
+| `.rle()` (`Rle` トレイト) | `O(1)` | 連長圧縮する [`RleIter`](#rleiter) を返す。元のイテレータをこの時点で 1 要素読む |
+| `RleIter::next()` | 返す区間の長さに比例。最後まで回すと合計 `O(n)` | 次の `(値, 個数)` を返す。元が尽きたら `None` |
 
 `Rle` は [`Iterator`] を実装するすべての型に対して実装されているので、
 `use rle::Rle;` すれば任意のイテレータに `.rle()` が生えます。
@@ -85,5 +86,17 @@ assert_eq!(ans, "programing");
 `Rle::rle` は返り値を作る時点で元のイテレータを 1 要素読みます。
 純粋なイテレータでは観測できませんが、副作用を持つイテレータに対しては
 最初の `next()` を呼ぶ前に 1 要素進む点に注意してください。
+
+## ソース
+
+`crates/rle/src/lib.rs` の全文です。コードブロック右上のボタンでまるごとコピーできます。
+リポジトリのファイルをそのまま埋め込んでいるので、この表示が実装とずれることはありません。
+
+末尾の `#[cfg(test)] mod tests;` はユニットテストを読み込む 2 行です。
+提出先ではテストがコンパイルされないため、貼り付けたままで構いません。
+
+```rust,ignore
+{{#include ../../../crates/rle/src/lib.rs}}
+```
 
 [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html

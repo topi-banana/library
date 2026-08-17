@@ -90,3 +90,12 @@ jobs:
         with:
           mdbook-version: "0.5.4"
       - run: mdbook build book
+      # `{{#include}}` のパスが壊れていても mdbook は警告を出すだけで成功し、
+      # 展開されなかった記法が出力にそのまま残る。ソース埋め込みが
+      # 消えたページを公開しないよう、出力側で残骸を検出する。
+      - name: check includes are expanded
+        run: |
+          if grep -rn '{{#include' book/book; then
+            echo "::error::展開されていない {{#include}} が残っています。パスを確認してください。"
+            exit 1
+          fi

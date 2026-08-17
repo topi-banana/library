@@ -5,7 +5,7 @@
 前処理 `O(m)` 時間・メモリ、検索は最後まで列挙して `O(n)` 時間です。
 素朴な突き合わせの `O(nm)` と違い、テキスト側の添字は一度も巻き戻りません。
 
-- 実装: [`crates/kmp/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/kmp/src/lib.rs)
+- 実装: [`crates/kmp/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/kmp/src/lib.rs) — [全文はこのページの末尾](#ソース)
 - verify: [yukicoder No.430 文字列検索](https://yukicoder.me/problems/no/430), [yukicoder No.2298 yukicounter](https://yukicoder.me/problems/no/2298)
 
 「文字列」と名前が付いていますが、扱うのは `&[T]` です。
@@ -17,8 +17,9 @@
 
 | 項目 | 計算量 | 説明 |
 | --- | --- | --- |
-| `KMP::new(pattern)` | `O(m)` | パターンを前処理して検索器を作る |
-| `search(text)` | 全体で `O(n)` | 出現の開始位置を昇順に返す [`KMPIter`](#kmpiter) |
+| `KMP::new(pattern)` | 時間・メモリとも `O(m)` | パターンから LPS 配列を作り、検索器にする |
+| `search(text)` | `O(1)` | テキストを借りて [`KMPIter`](#kmpiter) を返す。この時点ではまだ走査しない |
+| `KMPIter::next()` | 次の出現まで進んだ分。最後まで回すと合計 `O(n)` | 次の出現の開始位置を昇順に返す |
 
 前処理はパターンだけに依存するので、1 つの `KMP` を複数のテキストに使い回せます。
 
@@ -164,5 +165,17 @@ assert_eq!(hits, vec![0, 11, 20]);
 `KMP::new` の境界は `T: Eq` です。
 `Iterator` の実装自体は `T: PartialEq` しか要求していませんが、
 `KMPIter` は `search` を通してしか作れないため、実質 `Eq` が必要になります。
+
+## ソース
+
+`crates/kmp/src/lib.rs` の全文です。コードブロック右上のボタンでまるごとコピーできます。
+リポジトリのファイルをそのまま埋め込んでいるので、この表示が実装とずれることはありません。
+
+末尾の `#[cfg(test)] mod tests;` はユニットテストを読み込む 2 行です。
+提出先ではテストがコンパイルされないため、貼り付けたままで構いません。
+
+```rust,ignore
+{{#include ../../../crates/kmp/src/lib.rs}}
+```
 
 [`str::matches`]: https://doc.rust-lang.org/std/primitive.str.html#method.matches

@@ -4,7 +4,7 @@
 見ている区間を 1 要素ずつ伸縮させながら状態を更新していくので、
 「区間の端を 1 要素だけ動かす」操作が軽い問題に使えます。
 
-- 実装: [`crates/mo/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/mo/src/lib.rs)
+- 実装: [`crates/mo/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/mo/src/lib.rs) — [全文はこのページの末尾](#ソース)
 - verify:
   - Library Checker: [Static Range Inversions Query](https://judge.yosupo.jp/problem/static_range_inversions_query),
     [Static Range Count Distinct](https://judge.yosupo.jp/problem/static_range_count_distinct),
@@ -29,16 +29,39 @@
 
 ## API
 
-| 項目 | 説明 |
-| --- | --- |
-| `Mo::new()` | 空のバッファを作る |
-| `Mo::push(l, r)` | 半開区間 `[l, r)` のクエリを積む |
-| `Mo::execute(&mut state)` | 積んだクエリを処理し、push した順の `Box<[Ans]>` を返す |
-| `MoSol::Ans` | 1 クエリの答え。`Default + Clone` が必要 |
-| `MoSol::MAX_INDEX_POW2` | Hilbert 曲線の一辺を `2^MAX_INDEX_POW2` とする |
-| `MoSol::add_l(i)` / `add_r(i)` | 区間を左 / 右へ 1 要素広げる。`i` は入る要素の添字 |
-| `MoSol::del_l(i)` / `del_r(i)` | 区間を左 / 右から 1 要素狭める。`i` は出る要素の添字 |
-| `MoSol::solve()` | 現在の区間に対する答えを返す |
+列の長さを `n`、積んだクエリの個数を `q` とします。
+
+### Mo
+
+クエリを溜めて処理を回す側です。
+
+| 項目 | 計算量 | 説明 |
+| --- | --- | --- |
+| `Mo::new()` | `O(1)` | 空のバッファを作る |
+| `push(l, r)` | ならし `O(1)` | 半開区間 `[l, r)` のクエリを積む |
+| `execute(&mut state)` | 並べ替えに `O(q · MAX_INDEX_POW2 + q log q)`、そのあと下の 5 つを呼ぶ | 積んだクエリを処理し、push した順の `Box<[Ans]>` を返す |
+
+`execute` は `self` を消費します。並べ替えの内訳は、
+クエリごとの Hilbert 順序の計算が `O(MAX_INDEX_POW2)` ずつと、その鍵での整列です。
+答えの `Box<[Ans]>` は `Ans::default()` で埋めてから作るので、`Ans` のメモリを `q` 個分使います。
+
+### MoSol
+
+解きたい問題ごとに実装する側です。計算量は自分で決めるものなので、
+代わりに `execute` 1 回でそれぞれが**何回呼ばれるか**を挙げます。
+
+| 項目 | 呼ばれる回数 | 説明 |
+| --- | --- | --- |
+| `MoSol::Ans` | — | 1 クエリの答え。`Default + Clone` が必要 |
+| `MoSol::MAX_INDEX_POW2` | — | Hilbert 曲線の一辺を `2^MAX_INDEX_POW2` とする |
+| `add_l(i)` / `add_r(i)` | 4 つ合わせて `O(n √q)` 回 | 区間を左 / 右へ 1 要素広げる。`i` は入る要素の添字 |
+| `del_l(i)` / `del_r(i)` | 同上 | 区間を左 / 右から 1 要素狭める。`i` は出る要素の添字 |
+| `solve()` | `q` 回 | 現在の区間に対する答えを返す |
+
+全体の計算量は `O(n √q)` に 1 回の伸縮のコストを掛けたものが主項になります。
+伸縮が `O(1)` なら `O(n √q)`、`O(log n)` なら `O(n √q log n)` です。
+`solve` は `q` 回しか呼ばれないので、多少重くても構いません
+([yukicoder No.924](#yukicoder-no924-紲星) はこの非対称性を使っています)。
 
 4 つのコールバックが受け取るのは、いずれも**出入りする要素そのものの添字**であって、
 移動後の区間の端ではありません。
@@ -248,3 +271,12 @@ while nr > r { /* del_r */ }
 並べ替えには `sort_by_cached_key` を使っています。
 `hilbert_order` は再帰呼び出しで `O(MAX_INDEX_POW2)` かかるため、
 比較のたびに再計算しないようにするためです。
+
+## ソース
+
+`crates/mo/src/lib.rs` の全文です。コードブロック右上のボタンでまるごとコピーできます。
+リポジトリのファイルをそのまま埋め込んでいるので、この表示が実装とずれることはありません。
+
+```rust,ignore
+{{#include ../../../crates/mo/src/lib.rs}}
+```
