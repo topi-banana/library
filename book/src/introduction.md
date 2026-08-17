@@ -19,7 +19,8 @@ library/
 │   ├── mo/
 │   ├── permutation/
 │   ├── ranges/
-│   └── rle/
+│   ├── rle/
+│   └── vec2d/
 ├── verify/          ジャッジの 1 問 = 1 バイナリ
 │   └── src/bin/
 └── book/            このドキュメント (mdBook)

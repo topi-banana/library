@@ -8,6 +8,7 @@
 
 - [列](./seq/index.md)
   - [Rle — 連長圧縮](./seq/rle.md)
+  - [Array2d — 2 次元配列](./seq/vec2d.md)
 - [文字列](./str/index.md)
   - [KMP — Knuth-Morris-Pratt 法](./str/kmp.md)
 - [組合せ](./comb/index.md)
