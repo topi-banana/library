@@ -14,9 +14,16 @@ push と pull request のたびに走ります。数分で終わる軽い検査�
 | `test` | `cargo nextest run --workspace --all-features` と `cargo test --doc --workspace` |
 | `machete` | `cargo machete` |
 | `typos` | `typos` |
-| `book` | `mdbook build book` |
+| `book` | `mdbook build book` と include 記法の展開確認 |
 
 ジョブを分けているのは、`fmt` が落ちても `clippy` の結果が見えるようにするためです。
+
+`book` ジョブがビルドの後に `grep` を挟んでいるのは、
+各ライブラリのページが `lib.rs` を include 記法で埋め込んでいるためです。
+指し先のパスが壊れると、mdBook は警告を出すだけでビルドには成功し、
+展開されなかった記法が出力の HTML にそのまま残ります。
+`book/book` にその残骸が現れたら失敗させているので、
+crate のファイルを移動・改名してページを直し忘れると、ここで止まります。
 
 `typos` はソースとドキュメントの綴りを検査します。設定はリポジトリルートの `_typos.toml` にあり、
 `b"ba"` のようなバイト文字列リテラルは入力データなので検査から外しています。
