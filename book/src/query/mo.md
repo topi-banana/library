@@ -4,7 +4,7 @@
 見ている区間を 1 要素ずつ伸縮させながら状態を更新していくので、
 「区間の端を 1 要素だけ動かす」操作が軽い問題に使えます。
 
-- 実装: [`crates/mo/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/mo/src/lib.rs)
+- 実装: [`crates/mo/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/mo/src/lib.rs) — [全文はこのページの末尾](#ソース)
 - verify:
   - Library Checker: [Static Range Inversions Query](https://judge.yosupo.jp/problem/static_range_inversions_query),
     [Static Range Count Distinct](https://judge.yosupo.jp/problem/static_range_count_distinct),
@@ -272,3 +272,11 @@ while nr > r { /* del_r */ }
 `hilbert_order` は再帰呼び出しで `O(MAX_INDEX_POW2)` かかるため、
 比較のたびに再計算しないようにするためです。
 
+## ソース
+
+`crates/mo/src/lib.rs` の全文です。コードブロック右上のボタンでまるごとコピーできます。
+リポジトリのファイルをそのまま埋め込んでいるので、この表示が実装とずれることはありません。
+
+```rust,ignore
+{{#include ../../../crates/mo/src/lib.rs}}
+```

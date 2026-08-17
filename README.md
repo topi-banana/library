@@ -33,6 +33,8 @@ library/
 各 crate の `src/lib.rs` にはコンテストへ提出するコードだけを置き、
 ユニットテストは `src/tests.rs` に分けています。
 コンテスト中は `lib.rs` を丸ごとコピーして貼り付けられます。
+[解説ドキュメント](https://topi-banana.github.io/library/book/)の各ページ末尾には
+その `lib.rs` の全文を埋め込んであるので、解説を読んでいる画面からそのままコピーできます。
 
 ## 開発
 

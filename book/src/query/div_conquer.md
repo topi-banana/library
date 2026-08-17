@@ -5,7 +5,7 @@
 「間に挟まる完全なブロックはキャッシュから」の 2 通りに分けて解き、
 部分結果をマージして答えます。
 
-- 実装: [`crates/div_conquer/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/div_conquer/src/lib.rs)
+- 実装: [`crates/div_conquer/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/div_conquer/src/lib.rs) — [全文はこのページの末尾](#ソース)
 - verify:
   - Library Checker: [Static Range Frequency](https://judge.yosupo.jp/problem/static_range_frequency)
   - yukicoder: [No.1332 Range Nearest Query](https://yukicoder.me/problems/no/1332),
@@ -339,3 +339,14 @@ Library Checker 1 問と yukicoder 2 問で検証しています。
 `resolve` の `where` 節にある `R: Clone` は、現状の畳み込みでは使っていません。
 `merger` が値を受け取って返すため、`acc` はムーブで渡せています。
 
+## ソース
+
+`crates/div_conquer/src/lib.rs` の全文です。コードブロック右上のボタンでまるごとコピーできます。
+リポジトリのファイルをそのまま埋め込んでいるので、この表示が実装とずれることはありません。
+
+末尾の `#[cfg(test)] mod tests;` はユニットテストを読み込む 2 行です。
+提出先ではテストがコンパイルされないため、貼り付けたままで構いません。
+
+```rust,ignore
+{{#include ../../../crates/div_conquer/src/lib.rs}}
+```

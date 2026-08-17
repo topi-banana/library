@@ -4,7 +4,7 @@
 確保が 1 回で済み、要素がメモリ上に連続して並ぶため、
 `Vec<Vec<T>>` より走査が速く、行ごとの間接参照もありません。
 
-- 実装: [`crates/vec2d/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/vec2d/src/lib.rs)
+- 実装: [`crates/vec2d/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/vec2d/src/lib.rs) — [全文はこのページの末尾](#ソース)
 - verify: なし
 
 対応するジャッジ問題が無いため、ユニットテストだけで検証しています。
@@ -155,3 +155,15 @@ std::ops::RangeFrom<usize> => |r, h| (r.start, h),
 
 現在 `Debug`、`Clone`、`PartialEq` は導出していません。
 テストで中身を比較しているのは、`Index` が返すスライス同士の比較です。
+
+## ソース
+
+`crates/vec2d/src/lib.rs` の全文です。コードブロック右上のボタンでまるごとコピーできます。
+リポジトリのファイルをそのまま埋め込んでいるので、この表示が実装とずれることはありません。
+
+末尾の `#[cfg(test)] mod tests;` はユニットテストを読み込む 2 行です。
+提出先ではテストがコンパイルされないため、貼り付けたままで構いません。
+
+```rust,ignore
+{{#include ../../../crates/vec2d/src/lib.rs}}
+```

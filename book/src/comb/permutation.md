@@ -4,7 +4,7 @@
 スライスを辞書順で 1 つ進める / 戻す `next_permutation`・`prev_permutation` と、
 多重集合から長さ `len` の順列をまとめて作る `permutation` です。
 
-- 実装: [`crates/permutation/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/permutation/src/lib.rs)
+- 実装: [`crates/permutation/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/permutation/src/lib.rs) — [全文はこのページの末尾](#ソース)
 - verify:
   - `next_permutation` — [yukicoder No.270 next_permutation (1)](https://yukicoder.me/problems/no/270), [yukicoder No.1051 PQ Permutation](https://yukicoder.me/problems/no/1051)
   - `prev_permutation` — [yukicoder No.927 Second Permutation](https://yukicoder.me/problems/no/927)
@@ -246,5 +246,17 @@ assert_eq!(best, 3);
 
 `permutation` の型境界は `Ord + Clone` ですが、内部では要素を clone するだけで
 比較はしていません。出力順が値の大小ではなく `counts` の並び順で決まるのはこのためです。
+
+## ソース
+
+`crates/permutation/src/lib.rs` の全文です。コードブロック右上のボタンでまるごとコピーできます。
+リポジトリのファイルをそのまま埋め込んでいるので、この表示が実装とずれることはありません。
+
+末尾の `#[cfg(test)] mod tests;` はユニットテストを読み込む 2 行です。
+提出先ではテストがコンパイルされないため、貼り付けたままで構いません。
+
+```rust,ignore
+{{#include ../../../crates/permutation/src/lib.rs}}
+```
 
 [`Vec`]: https://doc.rust-lang.org/std/vec/struct.Vec.html

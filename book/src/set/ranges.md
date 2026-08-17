@@ -3,7 +3,7 @@
 互いに重ならない半開区間 `[start, end)` の集合を管理します。
 区間を追加・削除するたびに、重なった区間や接した区間は 1 本にまとめられます。
 
-- 実装: [`crates/ranges/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/ranges/src/lib.rs)
+- 実装: [`crates/ranges/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/ranges/src/lib.rs) — [全文はこのページの末尾](#ソース)
 - verify:
   - `Ranges` — [yukicoder No.674 n連勤](https://yukicoder.me/problems/no/674), [yukicoder No.2292 Interval Union Find](https://yukicoder.me/problems/no/2292)
 
@@ -208,3 +208,14 @@ assert_eq!(frozen.as_slice(), &[(1, 20)]);
 比較を「直前の入力」ではなく「残っている区間」に対して行うのがポイントで、
 `[0..100, 10..20, 30..40]` のような入力が分裂しないのはこのためです。
 
+## ソース
+
+`crates/ranges/src/lib.rs` の全文です。コードブロック右上のボタンでまるごとコピーできます。
+リポジトリのファイルをそのまま埋め込んでいるので、この表示が実装とずれることはありません。
+
+末尾の `#[cfg(test)] mod tests;` はユニットテストを読み込む 2 行です。
+提出先ではテストがコンパイルされないため、貼り付けたままで構いません。
+
+```rust,ignore
+{{#include ../../../crates/ranges/src/lib.rs}}
+```

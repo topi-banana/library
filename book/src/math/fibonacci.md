@@ -4,7 +4,7 @@
 `fibonacci_matrix_pow` の値の型は `u128` 固定で、`Fibonacci` は
 `AddAssign + Clone` を満たす任意の型を載せられます。
 
-- 実装: [`crates/fibonacci/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/fibonacci/src/lib.rs)
+- 実装: [`crates/fibonacci/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/fibonacci/src/lib.rs) — [全文はこのページの末尾](#ソース)
 - verify:
   - `fibonacci_matrix_pow` — [yukicoder No.786 京都大学の過去問](https://yukicoder.me/problems/no/786)
   - `Fibonacci` — [yukicoder No.195 フィボナッチ数列の理解(2)](https://yukicoder.me/problems/no/195)
@@ -219,3 +219,14 @@ debug ビルドでは panic、release ビルドでは `2^128` を法とした値
 競技プログラミングでは答えを `10^9 + 7` などで割った余りにする問題が多く、
 その場合は行列積の各要素を法の下で計算することになります。
 
+## ソース
+
+`crates/fibonacci/src/lib.rs` の全文です。コードブロック右上のボタンでまるごとコピーできます。
+リポジトリのファイルをそのまま埋め込んでいるので、この表示が実装とずれることはありません。
+
+末尾の `#[cfg(test)] mod tests;` はユニットテストを読み込む 2 行です。
+提出先ではテストがコンパイルされないため、貼り付けたままで構いません。
+
+```rust,ignore
+{{#include ../../../crates/fibonacci/src/lib.rs}}
+```

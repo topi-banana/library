@@ -5,7 +5,7 @@
 前処理 `O(m)` 時間・メモリ、検索は最後まで列挙して `O(n)` 時間です。
 素朴な突き合わせの `O(nm)` と違い、テキスト側の添字は一度も巻き戻りません。
 
-- 実装: [`crates/kmp/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/kmp/src/lib.rs)
+- 実装: [`crates/kmp/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/kmp/src/lib.rs) — [全文はこのページの末尾](#ソース)
 - verify: [yukicoder No.430 文字列検索](https://yukicoder.me/problems/no/430), [yukicoder No.2298 yukicounter](https://yukicoder.me/problems/no/2298)
 
 「文字列」と名前が付いていますが、扱うのは `&[T]` です。
@@ -165,5 +165,17 @@ assert_eq!(hits, vec![0, 11, 20]);
 `KMP::new` の境界は `T: Eq` です。
 `Iterator` の実装自体は `T: PartialEq` しか要求していませんが、
 `KMPIter` は `search` を通してしか作れないため、実質 `Eq` が必要になります。
+
+## ソース
+
+`crates/kmp/src/lib.rs` の全文です。コードブロック右上のボタンでまるごとコピーできます。
+リポジトリのファイルをそのまま埋め込んでいるので、この表示が実装とずれることはありません。
+
+末尾の `#[cfg(test)] mod tests;` はユニットテストを読み込む 2 行です。
+提出先ではテストがコンパイルされないため、貼り付けたままで構いません。
+
+```rust,ignore
+{{#include ../../../crates/kmp/src/lib.rs}}
+```
 
 [`str::matches`]: https://doc.rust-lang.org/std/primitive.str.html#method.matches
