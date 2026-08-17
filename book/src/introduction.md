@@ -41,6 +41,10 @@ rle = { git = "https://github.com/topi-banana/library" }
 コンテスト本番では単一ファイルにまとめる必要があるため、
 [`cargo-equip`](https://github.com/qryxip/cargo-equip) などのバンドラを併用してください。
 
+バンドラを使わずに済ませたいときは、crate の `src/lib.rs` をそのまま提出コードへ
+貼り付けてください。`lib.rs` には提出するコードだけを置き、ユニットテストは
+隣の `src/tests.rs` に分けてあります。
+
 ## ライセンス
 
 [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.ja) です。
