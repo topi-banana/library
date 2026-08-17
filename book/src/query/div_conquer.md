@@ -23,7 +23,7 @@ crate 名は `div_conquer` ですが、扱っているのは分割統治では�
 その代わり状態を差分更新できれば何でも扱えます。
 こちらはクエリを溜めずにオンラインで 1 問ずつ答えられますが、
 その代わり「ブロック単位で答えを作れる」ことを要求します。
-なお現在の実装は列の更新には対応していません。
+列の更新にも対応していて、書き換えたブロックのキャッシュだけを張り直します。
 
 ## アルゴリズム
 
@@ -68,20 +68,59 @@ crate 名は `div_conquer` ですが、扱っているのは分割統治では�
 
 ## API
 
+列を持って更新する [`DivConquer`](#divconquer) と、
+そこから借りてクエリを解く [`ImmutableDivConquer`](#immutabledivconquer) の 2 つに分かれています。
+列を書き換えたら `into_immut` でキャッシュを張り直し、返ってきた側に `resolve` を投げます。
+
 ブロック長 `N` は const generics で、要素・キャッシュ・答え・引数の型は型引数で受け取ります。
 処理の中身は 4 つの関数ポインタで注入します。
 
-| 項目 | 説明 |
-| --- | --- |
-| `DivConquer::<N, _, _, _, _>::new(v, cacher, resolver, cache_resolver, merger)` | 列 `v` を `N` ごとに区切ってキャッシュを作る |
-| `resolve(range, &arg)` | 区間クエリを解く。`range` は `RangeBounds<usize>` なら何でもよい |
-| `cacher: fn(&[E]) -> C` | ブロックの要素から事前計算結果を作る |
-| `resolver: fn(&[E], &A) -> R` | 生の要素の列と引数からクエリを解く |
-| `cache_resolver: fn(&C, &A) -> R` | キャッシュと引数からクエリを解く |
-| `merger: fn(R, R) -> R` | 2 つの部分結果をマージする |
+以下、列の長さを `n`、ブロック数を `b = ⌈n / N⌉` と書きます。
+計算量は注入した関数の**呼び出し回数**で示します。実際の時間はこれに 1 回の重さを掛けたものです。
 
-構築は `cacher` 1 回を `O(c)` として `O(n / N · c)` 時間です。
-ブロック内の整列を `cacher` でやる場合は `O(n log N)` になります。
+### DivConquer
+
+| 項目 | 計算量 | 説明 |
+| --- | --- | --- |
+| `DivConquer::<N, _, _, _, _>::new(v, cacher, resolver, cache_resolver, merger)` | `cacher` を `b` 回 | 列 `v` を `N` ごとに区切り、ブロックごとのキャッシュを作る |
+| `push(element)` | ならし `O(1)` | 末尾に 1 要素足す。触れたブロックに印を付けるだけでキャッシュは作り直さない |
+| `pop()` | `O(1)` | 末尾の 1 要素を取り出して `Option<E>` で返す。空なら `None` |
+| `set(index, element)` | `O(1)` | `index` 番目を書き換える。印を付けるだけでキャッシュは作り直さない |
+| `into_immut()` | `O(b)` + `cacher` を「印の付いたブロック数」回 | 印の付いたブロックだけキャッシュを張り直し、[`ImmutableDivConquer`](#immutabledivconquer) を返す |
+
+更新は印 (dirty フラグ) を立てるだけで、キャッシュの再計算は `into_immut` まで遅延します。
+1 点更新の直後に `into_immut` を呼ぶ形でも、張り直すのは 1 ブロックだけです。
+`push` を `k` 回続けてから 1 回呼ぶ形なら、跨いだブロックの分だけで済みます。
+
+ただし印を調べる走査は毎回全ブロックを見るので、
+何も更新していなくても 1 回につき `O(b)` かかります。
+これは `resolve` がキャッシュを引く回数と同じオーダーなので、
+更新とクエリを交互に回しても全体の見積もりは変わりませんが、
+「更新していないから `into_immut` は無料」ではない点に注意してください。
+
+### ImmutableDivConquer
+
+| 項目 | 計算量 | 説明 |
+| --- | --- | --- |
+| `ImmutableDivConquer::<N, _, _, _, _>::new(slice, cache, cacher, resolver, cache_resolver, merger)` | `cacher` を `b` 回 | 借りた `slice` のキャッシュを、渡された `cache` に作る |
+| `resolve(range, &arg)` | `resolver` を高々 2 回 + `cache_resolver` を高々 `b` 回 + `merger` を高々 `b + 1` 回 | 区間クエリを解く。`range` は `RangeBounds<usize>` なら何でもよい |
+
+`resolver` に渡る列は 1 回あたり `N` 要素未満です。
+`resolver` の 1 要素あたりを `O(f)`、`cache_resolver` 1 回を `O(g)` とすれば
+1 クエリは `O(N · f + n / N · g)` 時間で、`N = √n` と取れば `O(√n)` になります。
+
+`ImmutableDivConquer::new` はキャッシュの置き場所 `&mut Vec<C>` を外から受け取ります。
+`DivConquer` を経由せず、既にある `&[E]` から直接クエリだけを投げたいときに使います。
+`cache` が空でないとパニックします。
+
+### コールバック
+
+| 項目 | 型 | 説明 |
+| --- | --- | --- |
+| `cacher` | `fn(&[E]) -> C` | ブロックの要素から事前計算結果を作る |
+| `resolver` | `fn(&[E], &A) -> R` | 生の要素の列と引数からクエリを解く |
+| `cache_resolver` | `fn(&C, &A) -> R` | キャッシュと引数からクエリを解く |
+| `merger` | `fn(R, R) -> R` | 2 つの部分結果をマージする |
 
 4 つとも `Fn` トレイトではなく**関数ポインタ**で受け取ります。
 `fn` で定義した関数と、何も捕捉しないクロージャはそのまま渡せますが、
@@ -125,13 +164,25 @@ fn merger(a: usize, b: usize) -> usize {
 
 let a = vec![1, 2, 1, 3, 2, 1, 2, 1];
 // 最初の型引数がブロック長。実際の問題では `√n` より大きめに取る。
-let dc = DivConquer::<4, _, _, _, _>::new(a, cacher, resolver, cache_resolver, merger);
+let mut dc = DivConquer::<4, _, _, _, _>::new(a, cacher, resolver, cache_resolver, merger);
 
-assert_eq!(dc.resolve(0..8, &1), 4);
-assert_eq!(dc.resolve(1..6, &2), 2); // 半端な部分だけで解く
-assert_eq!(dc.resolve(2..3, &1), 1); // 1 ブロックに収まる区間
-assert_eq!(dc.resolve(.., &2), 3); // `RangeBounds` なら何でも渡せる
+// クエリを投げるのは `into_immut` で受け取った側。
+let im = dc.into_immut();
+assert_eq!(im.resolve(0..8, &1), 4);
+assert_eq!(im.resolve(1..6, &2), 2); // 半端な部分だけで解く
+assert_eq!(im.resolve(2..3, &1), 1); // 1 ブロックに収まる区間
+assert_eq!(im.resolve(.., &2), 3); // `RangeBounds` なら何でも渡せる
+
+// 更新して、もう一度キャッシュを確定させてから引く。
+dc.set(0, 2);
+dc.push(2);
+let im = dc.into_immut();
+assert_eq!(im.resolve(.., &2), 5);
 ```
+
+`into_immut` は `&mut self` を借りるので、返ってきた `im` が生きている間は
+`dc` を更新できません。更新とクエリを交互にする場合は、上のように
+`im` を使い終えてから次の更新に進みます。
 
 `resolver` と `cache_resolver` は同じ問いに答える 2 つの実装です。
 どちらも「与えられた範囲に `x` が何個あるか」を返し、
@@ -168,8 +219,11 @@ impl Default for Dist {
 `Result::default()` も `merger` も経由しません。
 サンプルが小さいと素通りするので、手元では長い列で試してください。
 
-**列は構築時に固定されます。** 更新のための API はまだありません。
-`resolve` は `&self` を取るだけなので、オンラインクエリには使えます。
+**更新したら `into_immut` を呼び直します。**
+`push` / `pop` / `set` はキャッシュをその場で作り直さず、印を立てるだけです。
+`resolve` は `ImmutableDivConquer` にしかないので、更新後にクエリを投げるには
+必ず `into_immut` を通ることになり、印の付いたブロックはそこで張り直されます。
+`resolve` 自体は `&self` を取るだけなので、オンラインクエリに使えます。
 
 **`N` は `0` にできません。** ブロックに区切る時点でパニックします。
 
@@ -267,7 +321,21 @@ Library Checker 1 問と yukicoder 2 問で検証しています。
 `r == n` かつ `n % N != 0` のときは `rb` が末尾のブロックを指し、
 その分は `resolver` で処理されるので、短いブロックのキャッシュが使われることはありません。
 
-構造体は `cacher` も保持していますが、現在の実装では使っていません。
-点更新を入れたときに、更新された要素を含むブロックのキャッシュを張り直すために持っています。
-`resolve` の `where` 節にある `R: Clone` も、現状の畳み込みでは使っていません。
+`DivConquer` が `cacher` を保持しているのは、`into_immut` でキャッシュを張り直すためです。
+`push` / `pop` / `set` は `dirty[block]` を立てるだけで、
+`into_immut` が立っているブロックだけを `cacher` で作り直してから印を下ろします。
+`push` がブロックを 1 つ増やしたときは `MaybeUninit::uninit()` を積むので、
+その時点ではキャッシュは未初期化です。
+`into_immut` を通れば必ず初期化されるため、
+そこでの `assume_init_ref` が成り立ちます。
+
+キャッシュを `Vec<MaybeUninit<C>>` で持っている副作用として、
+**`C` のデストラクタは一度も走りません**。
+`pop` でブロックが減ったときも、`DivConquer` 自体を捨てたときも同じです。
+`C` が `Vec` などヒープを持つ型だと、その分は解放されないまま残ります。
+1 回の実行で捨てて終わるコンテスト用途では問題になりませんが、
+同じプロセスで作っては捨てるループを回す場合は積み上がります。
+
+`resolve` の `where` 節にある `R: Clone` は、現状の畳み込みでは使っていません。
 `merger` が値を受け取って返すため、`acc` はムーブで渡せています。
+
