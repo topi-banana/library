@@ -1,0 +1,6 @@
+# typos (https://github.com/crate-ci/typos) の設定。
+
+[default]
+# 文字列アルゴリズムのテストに出てくるバイト文字列リテラル (b"ba" など) は
+# 英単語ではなく入力データなので、綴りの検査から外す。
+extend-ignore-re = ['b"[A-Za-z]*"']

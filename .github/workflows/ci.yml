@@ -71,6 +71,16 @@ jobs:
           tool: cargo-machete
       - run: cargo machete
 
+  typos:
+    name: typos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: typos
+      - run: typos
+
   book:
     name: mdbook build
     runs-on: ubuntu-latest

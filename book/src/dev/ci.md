@@ -13,9 +13,14 @@ push と pull request のたびに走ります。数分で終わる軽い検査�
 | `check` | `cargo check --workspace --all-targets --all-features` |
 | `test` | `cargo nextest run --workspace --all-features` と `cargo test --doc --workspace` |
 | `machete` | `cargo machete` |
+| `typos` | `typos` |
 | `book` | `mdbook build book` |
 
 ジョブを分けているのは、`fmt` が落ちても `clippy` の結果が見えるようにするためです。
+
+`typos` はソースとドキュメントの綴りを検査します。設定はリポジトリルートの `_typos.toml` にあり、
+`b"ba"` のようなバイト文字列リテラルは入力データなので検査から外しています。
+誤検出が出たら `[default.extend-words]` に語を足すか、`extend-ignore-re` を広げてください。
 
 ## `verify.yml` — ジャッジによる検証と Pages のデプロイ
 
