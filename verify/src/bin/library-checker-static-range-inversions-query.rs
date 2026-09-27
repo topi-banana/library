@@ -19,7 +19,7 @@ impl Fenwick {
         let mut x = i + 1;
         while x < self.tree.len() {
             self.tree[x] += 1;
-            x += x & x.wrapping_neg();
+            x += x.isolate_lowest_one();
         }
     }
     /// 位置 `i` の個数を 1 減らす。
@@ -27,7 +27,7 @@ impl Fenwick {
         let mut x = i + 1;
         while x < self.tree.len() {
             self.tree[x] -= 1;
-            x += x & x.wrapping_neg();
+            x += x.isolate_lowest_one();
         }
     }
     /// `0..i` の個数の和。
@@ -36,7 +36,7 @@ impl Fenwick {
         let mut acc = 0;
         while x > 0 {
             acc += u64::from(self.tree[x]);
-            x -= x & x.wrapping_neg();
+            x -= x.isolate_lowest_one();
         }
         acc
     }
