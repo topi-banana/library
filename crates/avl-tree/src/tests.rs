@@ -462,3 +462,4 @@ fn absorb_merges_intervals() {
 }
 
 mod indexed;
+mod lazy_segment_tree;

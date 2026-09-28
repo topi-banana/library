@@ -20,8 +20,10 @@ use std::cmp::Ordering;
 use std::mem::ManuallyDrop;
 
 mod indexed;
+mod lazy_segment_tree;
 
 pub use indexed::Indexed;
+pub use lazy_segment_tree::{Action, LazySegmentTree, Monoid};
 
 /// AVL 木のノードに載せる値。
 ///
@@ -44,6 +46,7 @@ pub trait Element: Sized {
     /// 溜めた遅延タグを子へ流します。
     ///
     /// 遅延セグメント木のように作用を溜める要素のための拡張点です。
+    /// 木は回転の前や、挿入・削除・検索の経路、区間操作の途中で呼びます。
     /// 既定では何もしません。
     fn push(&mut self, _left: Option<&mut Self>, _right: Option<&mut Self>) {}
 
@@ -253,6 +256,9 @@ impl<E: Element> Map<E> {
     /// [`Map::insert`] と違い、同一キーの置き換えや吸収は行いません。
     /// 挿入する要素は葉として正規化するため、先に [`Element::update`] を呼びます。
     pub fn slot_insert(&mut self, v: VacantSlot, mut element: E) -> Slot {
+        // 挿入位置までの遅延タグを先に流し、新しく入る要素に
+        // 過去に適用された作用が乗らないようにする。
+        self.push_path_to_key(element.key());
         element.update(None, None);
 
         let new_idx = self.nodes.len();
@@ -298,6 +304,9 @@ impl<E: Element> Map<E> {
                 let other = unsafe { self.slot_remove(slot) };
                 element.absorb(other);
             } else {
+                // 置き換える位置までの遅延タグを先に流し、新しい値に
+                // 過去の作用が乗らないようにする (子は作用を受け取る)。
+                self.push_path_to(slot.index);
                 self.nodes[slot.index].element = element;
                 unsafe { self.slot_refresh(slot) };
                 return slot;
@@ -336,14 +345,25 @@ impl<E: Element> Map<E> {
     pub unsafe fn slot_remove(&mut self, s: Slot) -> E {
         let mut del_idx = s.index;
 
+        // 削除対象までの遅延タグを先に流す。削除対象の子は作用を受け取り、
+        // 返す要素の値は作用適用済みになる。
+        self.push_path_to(del_idx);
+
         let has_left = self.nodes[del_idx].left != usize::MAX;
         let has_right = self.nodes[del_idx].right != usize::MAX;
 
         // 子が2つある場合、後継とデータを交換して削除対象を移動
         if has_left && has_right {
             let mut s_idx = self.nodes[del_idx].right;
-            while self.nodes[s_idx].left != usize::MAX {
-                s_idx = self.nodes[s_idx].left;
+            // 交換でキー集合が入れ替わるため、後継までの経路の遅延タグも
+            // 先に流しておく。
+            loop {
+                self.push_node(s_idx);
+                let left = self.nodes[s_idx].left;
+                if left == usize::MAX {
+                    break;
+                }
+                s_idx = left;
             }
             self.swap_contents(del_idx, s_idx);
             del_idx = s_idx;
@@ -477,6 +497,68 @@ impl<E: Element> Map<E> {
         self.nodes[idx].height = height;
     }
 
+    /// 指定ノードの遅延タグを子へ流します
+    ///
+    /// `idx` はこのマップに対して有効なノードのインデックスである必要があります。
+    fn push_node(&mut self, idx: usize) {
+        let left = self.nodes[idx].left;
+        let right = self.nodes[idx].right;
+
+        match (left == usize::MAX, right == usize::MAX) {
+            (true, true) => self.nodes[idx].element.push(None, None),
+            (false, true) => {
+                let [node, l] = self.nodes.get_disjoint_mut([idx, left]).unwrap();
+                node.element.push(Some(&mut l.element), None);
+            }
+            (true, false) => {
+                let [node, r] = self.nodes.get_disjoint_mut([idx, right]).unwrap();
+                node.element.push(None, Some(&mut r.element));
+            }
+            (false, false) => {
+                let [node, l, r] = self.nodes.get_disjoint_mut([idx, left, right]).unwrap();
+                node.element.push(Some(&mut l.element), Some(&mut r.element));
+            }
+        }
+    }
+
+    /// 根から `target` までの経路の遅延タグを上から順に子へ流します
+    ///
+    /// `target` はこのマップに対して有効なノードのインデックスである必要があります。
+    fn push_path_to(&mut self, target: usize) {
+        let mut current = self.root;
+        while current != usize::MAX {
+            if current == target {
+                self.push_node(current);
+                return;
+            }
+            let cmp = self.nodes[target].element.key().cmp(self.nodes[current].element.key());
+            self.push_node(current);
+            current = match cmp {
+                Ordering::Less => self.nodes[current].left,
+                Ordering::Greater => self.nodes[current].right,
+                // キーは一意なので、target に向かう途中で Equal にはならない
+                Ordering::Equal => return,
+            };
+        }
+    }
+
+    /// 根から `key` の位置までの経路の遅延タグを上から順に子へ流します
+    fn push_path_to_key<Q: ?Sized + Ord>(&mut self, key: &Q)
+    where
+        E::Key: Borrow<Q>,
+    {
+        let mut current = self.root;
+        while current != usize::MAX {
+            let cmp = key.cmp(self.nodes[current].element.key().borrow());
+            self.push_node(current);
+            current = match cmp {
+                Ordering::Equal => return,
+                Ordering::Less => self.nodes[current].left,
+                Ordering::Greater => self.nodes[current].right,
+            };
+        }
+    }
+
     /// 指定ノードのバランス係数を取得します
     fn get_balance(&self, idx: usize) -> i32 {
         if idx == usize::MAX {
@@ -512,6 +594,12 @@ impl<E: Element> Map<E> {
     /// 左回転を行います
     fn rotate_left(&mut self, x: usize) {
         let y = self.nodes[x].right;
+
+        // 回転で部分木のキー集合が入れ替わるため、先に遅延タグを流しておく。
+        // 回転後に流すとタグの適用範囲がずれる。
+        self.push_node(x);
+        self.push_node(y);
+
         let t2 = self.nodes[y].left;
 
         self.nodes[y].left = x;
@@ -540,6 +628,12 @@ impl<E: Element> Map<E> {
     /// 右回転を行います
     fn rotate_right(&mut self, y: usize) {
         let x = self.nodes[y].left;
+
+        // 回転で部分木のキー集合が入れ替わるため、先に遅延タグを流しておく。
+        // 回転後に流すとタグの適用範囲がずれる。
+        self.push_node(y);
+        self.push_node(x);
+
         let t2 = self.nodes[x].right;
 
         self.nodes[x].right = y;

@@ -21,6 +21,10 @@ use super::*;
 /// ノード数を数え直します。[`Map`] に載せると [`Map::slot_by_index`] /
 /// [`Map::get_by_index`] / [`Map::index_of`] による index アクセス (順序統計) が使えます。
 ///
+/// サイズの計算に加えて、包んでいる要素の [`Element::update`] も呼びます。
+/// そのため [`LazySegmentTree`](crate::LazySegmentTree) のように部分木の集約値を
+/// 持つ要素を包んでも、集約値と index アクセスを両立できます。
+///
 /// # Examples
 ///
 /// ```
@@ -81,6 +85,8 @@ impl<E: Element> Element for Indexed<E> {
 
     fn update(&mut self, left: Option<&Self>, right: Option<&Self>) {
         self.size = 1 + left.map_or(0, |l| l.size) + right.map_or(0, |r| r.size);
+        // 包んでいる要素にも子を渡して、集約値やキー範囲などを保つ。
+        self.element.update(left.map(|l| &l.element), right.map(|r| &r.element));
     }
 
     fn push(&mut self, left: Option<&mut Self>, right: Option<&mut Self>) {
