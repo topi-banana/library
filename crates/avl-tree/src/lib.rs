@@ -59,9 +59,10 @@ pub struct Slot {
 
 /// 空きスロット (挿入位置の情報を保持)
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct VacantSlot {
-    parent: usize,
-    is_left: bool,
+pub enum VacantSlot {
+    None,
+    Left(usize),
+    Right(usize),
 }
 
 /// AVL木マップ。
@@ -101,26 +102,23 @@ impl<E: Element> Map<E> {
         E::Key: Borrow<Q>,
     {
         let mut current = self.root;
-        let mut parent = usize::MAX;
-        let mut is_left = false;
+        let mut vacant_slot = VacantSlot::None;
 
         while current != usize::MAX {
             let node = &self.nodes[current];
             match key.cmp(node.element.key().borrow()) {
                 Ordering::Equal => return Ok(Slot { index: current }),
                 Ordering::Less => {
-                    parent = current;
-                    is_left = true;
+                    vacant_slot = VacantSlot::Left(current);
                     current = node.left;
                 }
                 Ordering::Greater => {
-                    parent = current;
-                    is_left = false;
+                    vacant_slot = VacantSlot::Right(current);
                     current = node.right;
                 }
             }
         }
-        Err(VacantSlot { parent, is_left })
+        Err(vacant_slot)
     }
 
     /// キーを持つ要素が存在するかを返します
@@ -234,28 +232,31 @@ impl<E: Element> Map<E> {
     ///
     /// [`Map::insert`] と違い、同一キーの置き換えや吸収は行いません。
     /// 挿入する要素は葉として正規化するため、先に [`Element::update`] を呼びます。
-    pub fn slot_insert(&mut self, v: VacantSlot, element: E) -> Slot {
-        let mut element = element;
+    pub fn slot_insert(&mut self, v: VacantSlot, mut element: E) -> Slot {
         element.update(None, None);
 
         let new_idx = self.nodes.len();
         self.nodes.push(Node {
             element,
-            parent: v.parent,
+            parent: usize::MAX,
             left: usize::MAX,
             right: usize::MAX,
             height: 1,
         });
 
-        if v.parent == usize::MAX {
-            self.root = new_idx;
-        } else if v.is_left {
-            self.nodes[v.parent].left = new_idx;
-        } else {
-            self.nodes[v.parent].right = new_idx;
+        match v {
+            VacantSlot::None => self.root = new_idx,
+            VacantSlot::Left(parent) => {
+                unsafe { self.nodes.get_unchecked_mut(new_idx) }.parent = parent;
+                self.nodes[parent].left = new_idx;
+                self.rebalance_from(parent);
+            }
+            VacantSlot::Right(parent) => {
+                unsafe { self.nodes.get_unchecked_mut(new_idx) }.parent = parent;
+                self.nodes[parent].right = new_idx;
+                self.rebalance_from(parent);
+            }
         }
-
-        self.rebalance_from(v.parent);
 
         self.len += 1;
         Slot { index: new_idx }

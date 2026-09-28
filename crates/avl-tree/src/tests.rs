@@ -118,8 +118,8 @@ fn slot_api_works() {
     let slot = map.slot_insert(vacant, SimpleElement::new(10, 1));
 
     assert_eq!(map.search(&10), Ok(slot));
-    assert_eq!(map.search(&5), Err(VacantSlot { parent: slot.index, is_left: true }));
-    assert_eq!(map.search(&15), Err(VacantSlot { parent: slot.index, is_left: false }));
+    assert_eq!(map.search(&5), Err(VacantSlot::Left(slot.index)));
+    assert_eq!(map.search(&15), Err(VacantSlot::Right(slot.index)));
 
     unsafe { map.slot_mut(slot).value = 2 };
     assert_eq!(map.get(&10), Some(&2));
