@@ -24,10 +24,14 @@
 `i32` などのプリミティブ型と `String` には `Element` を実装済みで、
 `Map<i32>` のようにそのまま重複なしの集合として使えます。
 
+`SimpleElement` と `Indexed` は `MapElement` も実装しています。`MapElement` を
+実装した要素を載せると、`Map` に `BTreeMap` 互換の API (`insert` / `entry` /
+`range` / `append` / `split_off` / `retain` など) が生えます。
+
 ## API
 
-木に載せる要素が実装する `Element` トレイトと、それを載せる `Map`、
-標準の要素である `SimpleElement` / `Indexed` の順に並べます。
+木に載せる要素が実装する `Element` / `MapElement` トレイトと、それを載せる
+`Map`、標準の要素である `SimpleElement` / `Indexed` の順に並べます。
 
 ### Element
 
@@ -52,28 +56,52 @@ self.sum = self.value + left.map_or(0, |l| l.sum) + right.map_or(0, |r| r.sum);
 
 のように、子の集約値から自分の集約値を計算します。
 
-### Map
+### MapElement
+
+キーと値の組を載せる要素が実装するトレイトです。`Element` を継承し、
+`SimpleElement<K, V>` と `Indexed<E: MapElement>` に実装しています。
+
+| 項目                                             | 説明                             |
+| ------------------------------------------------ | -------------------------------- |
+| `type Value`                                     | 値の型                           |
+| `new(key, value) -> Self`                        | キーと値から要素を作る           |
+| `value(&self) -> &Value`                         | 値への参照                       |
+| `value_mut(&mut self) -> &mut Value`             | 値への可変参照                   |
+| `key_value_mut(&mut self) -> (&Key, &mut Value)` | キーと値への可変参照を同時に返す |
+| `into_kv(self) -> (Key, Value)`                  | キーと値を取り出す               |
+
+`Element` だけを実装した要素でも `Map` は使えますが、`MapElement` を実装すると
+`Map` に `BTreeMap` 互換の API (`insert` / `entry` / `range` / `append` など) が
+生えます。集約値は値に依存しないように実装してください。値の変更は `get_mut` などで
+直接行えるため、値に依存する集約値は更新されません。
+
+### Map (Element レベル)
 
 `Map<E>` が本体です。要素 `E` が `Element` を実装している必要があります。
+こちらは要素そのものと木の構造を扱う API です。
 
-| 項目                                    | 計算量                      | 説明                                                |
-| --------------------------------------- | --------------------------- | --------------------------------------------------- |
-| `Map::new()`                            | `O(1)`                      | 空のマップを作る                                    |
-| `len()` / `is_empty()`                  | `O(1)`                      | 要素数 / 空かどうか                                 |
-| `capacity()`                            | `O(1)`                      | 内部のノード配列の容量                              |
-| `search(&key)`                          | `O(log n)`                  | 一致する Slot、無ければ挿入位置の VacantSlot を返す |
-| `contains(&key)`                        | `O(log n)`                  | キーを持つ要素があるか                              |
-| `predecessor(&key)` / `successor(&key)` | `O(log n)`                  | `key` より小さい最大 / 大きい最小の要素の Slot      |
-| `first()` / `last()`                    | `O(log n)`                  | in-order の最初 / 最後の要素の Slot                 |
-| `next(slot)` / `prev(slot)`             | `O(log n)`                  | Slot の in-order 後継 / 先行                        |
-| `insert(element)`                       | ならし `O(log n)`           | 要素を追加し Slot を返す。同一キーは吸収か置き換え  |
-| `slot_insert(vacant, element)`          | `O(log n)`                  | 空きスロットへ要素を追加する                        |
-| `slot_remove(slot)`                     | `O(log n)`                  | Slot の要素を削除して返す (unsafe)                  |
-| `slot_ref(slot)` / `slot_mut(slot)`     | `O(1)`                      | 要素への参照 / 可変参照 (unsafe)                    |
-| `slot_refresh(slot)`                    | `O(log n)`                  | Slot の要素と祖先の集約値を再計算する (unsafe)      |
-| `iter()` / `iter_mut()`                 | 1 要素あたりならし `O(1)`   | in-order の不変 / 可変イテレータ                    |
-| `extract_if(f)`                         | 1 個あたりならし `O(log n)` | 条件を満たす要素を削除しながら返す                  |
-| `default()` / `into_iter()`             | `O(1)` / `O(n)`             | 空のマップ / 所有権を消費するイテレータ             |
+| 項目                                      | 計算量                      | 説明                                                |
+| ----------------------------------------- | --------------------------- | --------------------------------------------------- |
+| `Map::new()`                              | `O(1)`                      | 空のマップを作る                                    |
+| `Map::with_capacity(n)`                   | `O(1)`                      | `n` 個分の容量を確保した空のマップを作る            |
+| `len()` / `is_empty()` / `capacity()`     | `O(1)`                      | 要素数 / 空かどうか / 内部のノード配列の容量        |
+| `reserve` / `try_reserve` (`_exact` 付き) | `O(n)`                      | 追加の容量を確保する (`Vec` と同じ意味論)           |
+| `shrink_to_fit()` / `shrink_to(n)`        | `O(n)`                      | 余分な容量を解放する                                |
+| `clear()`                                 | `O(n)`                      | すべての要素を削除する (容量は保持)                 |
+| `search(&key)`                            | `O(log n)`                  | 一致する Slot、無ければ挿入位置の VacantSlot を返す |
+| `contains(&key)`                          | `O(log n)`                  | キーを持つ要素があるか                              |
+| `predecessor(&key)` / `successor(&key)`   | `O(log n)`                  | `key` より小さい最大 / 大きい最小の要素の Slot      |
+| `first()` / `last()`                      | `O(log n)`                  | in-order の最初 / 最後の要素の Slot                 |
+| `next(slot)` / `prev(slot)`               | `O(log n)`                  | Slot の in-order 後継 / 先行                        |
+| `insert_element(element)`                 | ならし `O(log n)`           | 要素を追加し Slot を返す。同一キーは吸収か置き換え  |
+| `slot_insert(vacant, element)`            | `O(log n)`                  | 空きスロットへ要素を追加する                        |
+| `slot_remove(slot)`                       | `O(log n)`                  | Slot の要素を削除して返す (unsafe)                  |
+| `slot_ref(slot)` / `slot_mut(slot)`       | `O(1)`                      | 要素への参照 / 可変参照 (unsafe)                    |
+| `slot_refresh(slot)`                      | `O(log n)`                  | Slot の要素と祖先の集約値を再計算する (unsafe)      |
+| `iter_elements()` / `iter_mut_elements()` | 1 要素あたりならし `O(1)`   | in-order の要素の不変 / 可変イテレータ              |
+| `into_elements()`                         | `O(n)`                      | 所有権を消費して要素を取り出すイテレータ            |
+| `extract_elements_if(f)`                  | 1 個あたりならし `O(log n)` | 条件を満たす要素を削除しながら返す                  |
+| `default()`                               | `O(1)`                      | 空のマップ                                          |
 
 `search` などが返す `Slot` は `slot_ref` や `slot_remove` に渡すハンドルです。
 
@@ -86,31 +114,69 @@ self.sum = self.value + left.map_or(0, |l| l.sum) + right.map_or(0, |r| r.sum);
 わけではなく、**そのマップに対して有効な `Slot`** を渡す責任が利用者にあります。
 だから `slot_*` は `unsafe` なのです。
 
-`insert` は同じキーの要素を見つけると `Element::can_absorb` を試し、
+`insert_element` は同じキーの要素を見つけると `Element::can_absorb` を試し、
 `true` なら相手を削除して `Element::absorb` で吸収します。
 さらに前後の隣接要素に対しても吸収できる限り繰り返します。
-1 回の `insert` で複数の要素を吸収することがありますが、
+1 回の `insert_element` で複数の要素を吸収することがありますが、
 吸収されて消える要素は 1 回しか消えないため、ならし計算量は `O(log n)` です。
 
-イテレータ型 `Iter` / `IterMut` / `IntoIter` / `ExtractIf` は `Iterator` を実装しています。
+イテレータ型 `IterElements` / `IterMutElements` / `IntoElements` /
+`ExtractElementsIf` は `Iterator` を実装しています。
+
+### Map (MapElement レベル)
+
+要素が `MapElement` を実装しているとき、`Map<E>` に `BTreeMap` 互換の API が
+生えます。以下 `K = E::Key`、`V = E::Value` とします。
+
+| 項目                                       | 計算量                    | 説明                                             |
+| ------------------------------------------ | ------------------------- | ------------------------------------------------ |
+| `insert(key, value)`                       | `O(log n)`                | 追加し、同じキーの以前の値を返す                 |
+| `put(key, value)`                          | ならし `O(log n)`         | 追加し Slot を返す。同じキーは置き換え           |
+| `entry(key)`                               | `O(log n)`                | `Entry` (`Occupied` / `Vacant`) を返す           |
+| `get(&key)` / `get_mut(&key)`              | `O(log n)`                | 値への参照 / 可変参照                            |
+| `get_key_value(&key)`                      | `O(log n)`                | キーと値への参照                                 |
+| `contains_key(&key)`                       | `O(log n)`                | キーが存在するか                                 |
+| `get_disjoint_mut([&k1, &k2, ..])`         | `O(N^2 + N log n)`        | 最大 `N` 個の値への可変参照。重複キーは panic    |
+| `first_key_value()` / `last_key_value()`   | `O(log n)`                | 最小 / 最大キーの組                              |
+| `first_entry()` / `last_entry()`           | `O(log n)`                | 最小 / 最大キーの `OccupiedEntry`                |
+| `pop_first()` / `pop_last()`               | `O(log n)`                | 最小 / 最大キーの組を取り出して削除              |
+| `remove(&key)` / `remove_entry(&key)`      | `O(log n)`                | 値を削除して返す / キーと値を削除して返す        |
+| `retain(f)`                                | `O(n log n)`              | 条件を満たさない要素を削除する                   |
+| `append(&mut other)`                       | `O(m log(n + m))`         | `other` の全要素 (`m` 個) を移動し `other` を空に |
+| `split_off(&key)`                          | `O(k log n)`              | `key` 以上の要素 (`k` 個) を新しい `Map` に移す  |
+| `range(range)` / `range_mut(range)`        | 1 要素あたりならし `O(1)` | キー範囲の `(&K, &V)` / `(&K, &mut V)`           |
+| `iter()` / `iter_mut()`                    | 1 要素あたりならし `O(1)` | 全要素の `(&K, &V)` / `(&K, &mut V)`             |
+| `keys()` / `values()` / `values_mut()`     | 1 要素あたりならし `O(1)` | キー / 値 / 値の可変イテレータ                   |
+| `into_keys()` / `into_values()`            | `O(n)`                    | 所有権を消費してキー / 値を取り出す              |
+| `extract_if(range, pred)`                  | 1 個あたりならし `O(log n)` | 範囲内で条件を満たす要素を削除しながら返す     |
+| `drain()`                                  | `O(n log n)`              | すべての要素を削除しながら返す                   |
+
+`entry` は `or_insert` / `or_insert_with` / `or_insert_with_key` / `or_default` /
+`and_modify` / `insert_entry` / `remove` などを持つ `Entry` を返します。
+`range` は `start..end` などの `RangeBounds` を取り、`..` で全要素になります。
+範囲の両端が逆転している場合は `BTreeMap` と同じく panic します
+(`range_mut` / `extract_if` も同様)。
+
+`Index` (`map[&key]`)、`FromIterator` / `Extend` (`collect` / `extend`)、
+`IntoIterator` (所有で `(K, V)`、`&Map` で `(&K, &V)`、`&mut Map` で `(&K, &mut V)`)、
+`Clone` / `Debug` / `PartialEq` / `Eq` / `PartialOrd` / `Ord` / `Hash` も
+実装しています。
+
+イテレータ型 `Iter` / `IterMut` / `IntoIter` / `Range` / `RangeMut` / `Keys` /
+`Values` / `ValuesMut` / `IntoKeys` / `IntoValues` / `ExtractIf` / `Drain` は
+`Iterator` を実装しています。
 
 ### SimpleElement
 
 キーと値をそのまま載せる要素です。これを使うと普通のマップになります。
+`MapElement` を実装しているので、`Map<SimpleElement<K, V>>` では
+`MapElement` レベルの API (`insert` / `get` / `entry` / `range` など、
+値の型は `V`) がそのまま使えます。
 
 | 項目                                | 計算量 | 説明                     |
 | ----------------------------------- | ------ | ------------------------ |
 | `SimpleElement::new(key, value)`    | `O(1)` | キーと値の組を作る       |
 | `key()` / `value()` / `value_mut()` | `O(1)` | キー / 値 / 値の可変参照 |
-
-`Map<SimpleElement<K, V>>` には追加で次が生えます。
-
-| 項目              | 計算量     | 説明                                             |
-| ----------------- | ---------- | ------------------------------------------------ |
-| `put(key, value)` | `O(log n)` | キーと値を追加し Slot を返す。同じキーは置き換え |
-| `get(&key)`       | `O(log n)` | キーに対応する値への参照                         |
-| `get_mut(&key)`   | `O(log n)` | キーに対応する値への可変参照                     |
-| `remove(&key)`    | `O(log n)` | キーに対応する要素を削除し値を返す               |
 
 ### Indexed
 
@@ -134,7 +200,8 @@ in-order の位置 (index) で要素を引けます。
 | `get_by_index(index)`  | `O(log n)` | index 番目の要素への参照            |
 | `index_of(slot)`       | `O(log n)` | Slot の in-order 位置 (0 始まり)    |
 
-`Map<Indexed<SimpleElement<K, V>>>` では `put` / `get` / `get_mut` / `remove` も
+`Indexed<E>` は `E` が `MapElement` のときに `MapElement` を実装するので、
+`Map<Indexed<SimpleElement<K, V>>>` などでも `MapElement` レベルの API が
 使えます (`Map<SimpleElement<K, V>>` と同じ意味論)。
 
 `size()` は「自身を含む」部分木のノード数です。`slot_by_index` は節点で
@@ -215,8 +282,17 @@ map.put(2, "TWO"); // 同じキーは値を置き換える
 assert_eq!(map.get(&2), Some(&"TWO"));
 assert_eq!(map.remove(&2), Some("TWO"));
 
-let keys: Vec<u32> = map.iter().map(|e| *e.key()).collect();
-assert_eq!(keys, vec![1, 3]);
+// BTreeMap と同じ entry API
+map.entry(4).or_insert("four");
+map.entry(4).and_modify(|value| *value = "FOUR");
+assert_eq!(map.get_key_value(&4), Some((&4, &"FOUR")));
+
+// キー範囲のイテレータ (start..end, ..=end など)
+let range: Vec<(u32, &str)> = map.range(2..=4).map(|(&k, &v)| (k, v)).collect();
+assert_eq!(range, vec![(3, "three"), (4, "FOUR")]);
+
+let keys: Vec<u32> = map.keys().copied().collect();
+assert_eq!(keys, vec![1, 3, 4]);
 ```
 
 ### Element を自分で実装する
@@ -246,7 +322,7 @@ impl Element for SubtreeSum {
 
 let mut map: Map<SubtreeSum> = Map::new();
 for key in [2, 1, 3] {
-    map.insert(SubtreeSum { key, value: i64::from(key), sum: 0 });
+    map.insert_element(SubtreeSum { key, value: i64::from(key), sum: 0 });
 }
 
 // この入力ではキー 2 のノードが根になるので、その集約値は全体の和
@@ -374,12 +450,19 @@ assert_eq!(seg.index_of(seg.slot_by_index(1).unwrap()), 1);
 `slot_mut` や `Indexed::inner_mut` でキーを書き換えると木の順序が壊れ、
 検索や削除が誤動作します。書き換えてよいのは値だけです。
 キーを変えたい場合は一度削除して追加し直してください。
+`MapElement` レベルの `get_mut` / `iter_mut` / `range_mut` はキーを不変で
+返すので、こちらを使えばキーを壊す心配はありません。
 
 ### 集約値の編集には slot_refresh が要る
 
 `slot_mut` で `update` の対象になるフィールド (部分木和など) を直接編集した場合、
 木は変更に気づけません。`slot_refresh(slot)` でそのノードから根まで
 集約値を再計算してください。
+
+`MapElement` レベルの `get_mut` / `iter_mut` / `values_mut` / `range_mut` や、
+Element レベルの `iter_mut_elements` で値を書き換えた場合も同じです。
+値が集約値に影響する要素では、書き換えたノードごとに `slot_refresh` を呼んで
+ください (`Indexed` のように集約値が値によらない要素では不要です)。
 
 `Indexed` の部分木サイズはキーと木の構造だけで決まるので、
 `Indexed` を使っているときはこの再計算は不要です。

@@ -27,7 +27,7 @@ fn assert_indexed_matches_btreemap(
     assert_eq!(map.len(), model.len(), "{label:?}: len");
     assert_eq!(map.is_empty(), model.is_empty(), "{label:?}: is_empty");
 
-    let got: Vec<(u32, u64)> = map.iter().map(|e| (*e.inner().key(), *e.inner().value())).collect();
+    let got: Vec<(u32, u64)> = map.iter().map(|(&k, &v)| (k, v)).collect();
     let want: Vec<(u32, u64)> = model.iter().map(|(&k, &v)| (k, v)).collect();
     assert_eq!(got, want, "{label:?}: iteration");
 
@@ -174,11 +174,13 @@ fn indexed_interval_absorb_delegates() {
     let mut model: Vec<(u32, u32, u64)> = Vec::new();
 
     for &(start, end) in &[(1, 3), (2, 5), (10, 12), (12, 14), (20, 21), (0, 1), (14, 20)] {
-        map.insert(Indexed::new(IntervalElement { range: (start, end), count: 1 }));
+        map.insert_element(Indexed::new(IntervalElement { range: (start, end), count: 1 }));
         model_insert_interval(&mut model, (start, end), 1);
 
-        let got: Vec<(u32, u32, u64)> =
-            map.iter().map(|e| (e.inner().range.0, e.inner().range.1, e.inner().count)).collect();
+        let got: Vec<(u32, u32, u64)> = map
+            .iter_elements()
+            .map(|e| (e.inner().range.0, e.inner().range.1, e.inner().count))
+            .collect();
         assert_eq!(got, model, "after ({start}, {end})");
         assert_indexed_sizes(&map, (start, end));
     }

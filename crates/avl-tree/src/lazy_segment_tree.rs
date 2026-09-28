@@ -529,7 +529,7 @@ impl<K: Ord + Clone, A: Action> Map<LazySegmentTree<K, A>> {
     /// 新しく入る値に、それまでその位置に溜まっていた作用は適用されません
     /// (先に作用を適用してから [`Map::put`] したものとみなします)。
     pub fn put(&mut self, key: K, value: A::S) -> Slot {
-        self.insert(LazySegmentTree::new(key, value))
+        self.insert_element(LazySegmentTree::new(key, value))
     }
 
     /// キーに対応する値への参照を返します
@@ -571,7 +571,7 @@ impl<K: Ord + Clone, A: Action> Map<Indexed<LazySegmentTree<K, A>>> {
     /// [`Indexed`] を外側に重ねているため、[`Map::slot_by_index`] /
     /// [`Map::get_by_index`] / [`Map::index_of`] も使えます。
     pub fn put(&mut self, key: K, value: A::S) -> Slot {
-        self.insert(Indexed::new(LazySegmentTree::new(key, value)))
+        self.insert_element(Indexed::new(LazySegmentTree::new(key, value)))
     }
 
     /// キーに対応する値への参照を返します

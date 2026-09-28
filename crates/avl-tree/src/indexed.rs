@@ -31,9 +31,9 @@ use super::*;
 /// use avl_tree::{Indexed, Map, SimpleElement};
 ///
 /// let mut map: Map<Indexed<SimpleElement<i32, &str>>> = Map::new();
-/// map.insert(Indexed::new(SimpleElement::new(2, "two")));
-/// map.insert(Indexed::new(SimpleElement::new(1, "one")));
-/// map.insert(Indexed::new(SimpleElement::new(3, "three")));
+/// map.put(2, "two");
+/// map.put(1, "one");
+/// map.put(3, "three");
 ///
 /// // in-order で index 1 の要素はキー 2
 /// let element = map.get_by_index(1).unwrap();
@@ -102,6 +102,30 @@ impl<E: Element> Element for Indexed<E> {
     }
 }
 
+impl<E: MapElement> MapElement for Indexed<E> {
+    type Value = E::Value;
+
+    fn new(key: E::Key, value: E::Value) -> Self {
+        Indexed { element: E::new(key, value), size: 1 }
+    }
+
+    fn value(&self) -> &E::Value {
+        self.element.value()
+    }
+
+    fn value_mut(&mut self) -> &mut E::Value {
+        self.element.value_mut()
+    }
+
+    fn key_value_mut(&mut self) -> (&E::Key, &mut E::Value) {
+        self.element.key_value_mut()
+    }
+
+    fn into_kv(self) -> (E::Key, E::Value) {
+        self.element.into_kv()
+    }
+}
+
 impl<E: Element> Map<Indexed<E>> {
     /// in-order で `index` 番目 (0 始まり) の要素の Slot を返します
     ///
@@ -154,51 +178,6 @@ impl<E: Element> Map<Indexed<E>> {
                 index += 1 + if left == usize::MAX { 0 } else { self.nodes[left].element.size };
             }
             current = parent;
-        }
-    }
-}
-
-impl<K: Ord, V> Map<Indexed<SimpleElement<K, V>>> {
-    /// キーと値を追加し、スロットを返します
-    ///
-    /// 同じキーがすでにある場合は値を置き換えます。
-    pub fn put(&mut self, key: K, value: V) -> Slot {
-        self.insert(Indexed::new(SimpleElement::new(key, value)))
-    }
-
-    /// キーに対応する値への参照を返します
-    pub fn get<Q: ?Sized + Ord>(&self, key: &Q) -> Option<&V>
-    where
-        K: Borrow<Q>,
-    {
-        match self.search(key) {
-            Ok(slot) => Some(unsafe { self.slot_ref(slot) }.inner().value()),
-            Err(_) => None,
-        }
-    }
-
-    /// キーに対応する値への可変参照を返します
-    ///
-    /// `Indexed` の部分木サイズはキーと構造だけで決まるため、
-    /// 値を書き換えても [`Map::slot_refresh`] は不要です。
-    pub fn get_mut<Q: ?Sized + Ord>(&mut self, key: &Q) -> Option<&mut V>
-    where
-        K: Borrow<Q>,
-    {
-        match self.search(key) {
-            Ok(slot) => Some(unsafe { self.slot_mut(slot) }.inner_mut().value_mut()),
-            Err(_) => None,
-        }
-    }
-
-    /// キーに対応する要素を削除し、値を返します
-    pub fn remove<Q: ?Sized + Ord>(&mut self, key: &Q) -> Option<V>
-    where
-        K: Borrow<Q>,
-    {
-        match self.search(key) {
-            Ok(slot) => Some(unsafe { self.slot_remove(slot) }.into_inner().value),
-            Err(_) => None,
         }
     }
 }
