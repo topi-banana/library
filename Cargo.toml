@@ -10,6 +10,7 @@ license = "CC0-1.0"
 publish = false
 
 [workspace.dependencies]
+avl-tree = { path = "crates/avl-tree" }
 div_conquer = { path = "crates/div_conquer" }
 fibonacci = { path = "crates/fibonacci" }
 kmp = { path = "crates/kmp" }

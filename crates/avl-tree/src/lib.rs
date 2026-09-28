@@ -1,7 +1,27 @@
+//! [`Element`] トレイトで集約値を差し替えられる AVL 木マップです。
+//!
+//! キーの比較と平衡化は木側が行い、部分木の集約値 (サイズ、和、マージ結果など) は
+//! 要素側の [`Element::update`] が子から計算します。素のキーと値の組には
+//! [`SimpleElement`] を使ってください。
+//!
+//! ```
+//! use avl_tree::{Map, SimpleElement};
+//!
+//! let mut map: Map<SimpleElement<i32, &str>> = Map::new();
+//! map.put(2, "two");
+//! map.put(1, "one");
+//!
+//! assert_eq!(map.get(&1), Some(&"one"));
+//! ```
+
 use std::alloc::{Layout, dealloc};
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::mem::ManuallyDrop;
+
+mod indexed;
+
+pub use indexed::Indexed;
 
 /// AVL 木のノードに載せる値。
 ///

@@ -118,6 +118,7 @@ version = "0.1.0"
 name = "verify"
 version = "0.1.0"
 dependencies = [
+ "avl-tree",
  "div_conquer",
  "fibonacci",
  "kmp",

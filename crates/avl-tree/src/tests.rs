@@ -460,3 +460,5 @@ fn absorb_merges_intervals() {
     let got: Vec<(u32, u32, u64)> = map.iter().map(|e| (e.range.0, e.range.1, e.count)).collect();
     assert_eq!(got, model);
 }
+
+mod indexed;
