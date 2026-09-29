@@ -9,6 +9,9 @@
 //! ([`insert`](Map::insert) / [`entry`](Map::entry) / [`range`](Map::range) /
 //! [`retain`](Map::retain) など) が使えます。
 //!
+//! 重なる・接する区間を 1 本にまとめて持つ区間集合には [`IntervalSet`] を
+//! 使ってください。
+//!
 //! ```
 //! use avl_tree::{Map, SimpleElement};
 //!
@@ -29,9 +32,11 @@ use std::mem::ManuallyDrop;
 use std::ops::{Bound, Index, RangeBounds};
 
 mod indexed;
+mod interval_set;
 mod lazy_segment_tree;
 
 pub use indexed::Indexed;
+pub use interval_set::{Interval, IntervalSet, Merge};
 pub use lazy_segment_tree::{Action, LazySegmentTree, Monoid};
 
 /// AVL 木のノードに載せる値。

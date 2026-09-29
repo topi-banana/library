@@ -3,13 +3,15 @@
 `Element` トレイトを実装した要素を載せられる AVL 木のマップです。
 キーの比較と木の平衡化はライブラリ側が行うので、利用者は
 「部分木にどんな集約値を持たせるか」だけを `Element::update` に書きます。
-集約値の例は部分木サイズ (→ k 番目アクセス)、部分木和、重なる区間の統合などです。
+集約値の例は部分木サイズ (→ k 番目アクセス)、部分木和、重なる区間の統合
+(`IntervalSet`) などです。
 遅延タグを使う要素を載せれば、キーの区間に対する作用と区間の集約
 (遅延セグメント木) もできます。
 
 - 実装: [`crates/avl-tree/src/lib.rs`](https://github.com/topi-banana/library/blob/main/crates/avl-tree/src/lib.rs) — [全文はこのページの末尾](#ソース)
     - 順序統計 (`Indexed`) は [`crates/avl-tree/src/indexed.rs`](https://github.com/topi-banana/library/blob/main/crates/avl-tree/src/indexed.rs) に分離
     - 遅延セグメント木 (`LazySegmentTree`) は [`crates/avl-tree/src/lazy_segment_tree.rs`](https://github.com/topi-banana/library/blob/main/crates/avl-tree/src/lazy_segment_tree.rs) に分離
+    - 区間集合 (`IntervalSet`) は [`crates/avl-tree/src/interval_set.rs`](https://github.com/topi-banana/library/blob/main/crates/avl-tree/src/interval_set.rs) に分離
 - verify:
     - `Indexed` — [yukicoder No.649 ここでちょっとQK！](https://yukicoder.me/problems/no/649),
       [No.3298 K-th Slime](https://yukicoder.me/problems/no/3298)
@@ -18,7 +20,8 @@
 以下 `n` はマップの要素数です。
 
 素のキーと値の組には `SimpleElement`、k 番目に小さい要素の取得 (順序統計) には
-`Indexed`、キー範囲への作用と区間の集約には `LazySegmentTree` を使います。
+`Indexed`、キー範囲への作用と区間の集約には `LazySegmentTree`、
+重なる区間の統合には `IntervalSet` を使います。
 どれも `Element` を実装した普通の要素なので、
 必要なら自分で `Element` を実装して差し替えられます。
 `i32` などのプリミティブ型と `String` には `Element` を実装済みで、
@@ -266,6 +269,57 @@ in-order の位置 (index) で要素を引けます。
 `Element::push` を呼びます。そのため `put` で新しく入る値に、それまで同じ
 位置にあった作用は乗りません (先に作用を適用してから `put` したのと同じです)。
 
+### IntervalSet
+
+重なる・接する半開区間 `[start, end)` を 1 本にまとめて持つ区間集合です。
+区間を追加すると重なる区間を吸収し、重なった区間の値は `Merge` で合成します。
+キーは半開区間を表す `Interval<T>` で、順序は `start` → `end` の辞書式です。
+
+`IntervalSet` は `interval_set.rs` に分かれています。使う問題では
+`lib.rs` の `mod interval_set;` を `interval_set.rs` のインラインモジュールに
+置き換えます ([ソース](#intervalset-も使う) 参照)。
+
+| トレイト | 項目                 | 説明                    |
+| -------- | -------------------- | ----------------------- |
+| `Merge`  | `type S: Clone`      | 値の型                  |
+| `Merge`  | `merge(&a, &b) -> S` | 2 つの値の合成          |
+| `Merge`  | `identity() -> S`    | 値が無い点の値 (単位元) |
+
+`IntervalSet` は次のメソッドを持ちます。
+
+| 項目                                           | 計算量 | 説明                                   |
+| ---------------------------------------------- | ------ | -------------------------------------- |
+| `IntervalSet::new(range, value)`               | `O(1)` | 区間 `[start, end)` と値から要素を作る |
+| `interval()` / `start()` / `end()` / `value()` | `O(1)` | 区間 / 始点 / 終点 / 値への参照        |
+| `into_value()`                                 | `O(1)` | 値を取り出す                           |
+
+キーの `Interval<T>` は `Interval::new(start, end)` や `Range` からの `From` で
+作り、`start()` / `end()` / `into_range()` で中身を取り出せます。
+
+`Map<IntervalSet<T, M>>` には追加で次が生えます。
+
+| 項目                            | 計算量                    | 説明                                                   |
+| ------------------------------- | ------------------------- | ------------------------------------------------------ |
+| `insert_range(range, value)`    | ならし `O(log n)`         | 区間を追加し、重なる・接する区間を吸収して値を合成する |
+| `remove_range(range)`           | `O(k log n)`              | 区間の被覆を削除する (`k` は交差した区間数)            |
+| `get_point(&point)`             | `O(log n)`                | 点を含む区間の値                                       |
+| `get_point_or_identity(&point)` | `O(log n)`                | 点を含む区間の値、無ければ `identity()`                |
+| `covering(&point)`              | `O(log n)`                | 点を含む区間と値                                       |
+| `covers(&point)`                | `O(log n)`                | 点がいずれかの区間に含まれるか                         |
+| `contains_range(&range)`        | `O(log n)`                | 区間の全体が 1 本の区間に含まれるか                    |
+| `overlaps(&range)`              | `O(log n)`                | 区間と少しでも重なるか                                 |
+| `iter_intervals()`              | 1 区間あたりならし `O(1)` | 区間と値のイテレータ                                   |
+
+`insert_range` の値は、追加する値を左、吸収される値を右にして
+`merge(現在の値, 吸収される値)` の順に合成されます
+(可換な `merge` なら順序は気にしなくて構いません)。
+空区間 (`start >= end`) は `insert_range` / `remove_range` とも何もせず、
+`contains_range` は `true`、`overlaps` は `false` を返します。
+
+`remove_range` は被覆部分だけを切り取り、はみ出した断片は元の値を引き継ぎます。
+値は断片に分割されないため、中央をくり抜くと同じ値が両側に残ります
+([注意点](#区間の削除では値が分割されない) 参照)。
+
 ## 使用例
 
 ### ソート済みマップとして使う
@@ -432,6 +486,49 @@ assert_eq!(*seg.get_by_index(0).unwrap().key(), 1);
 assert_eq!(seg.index_of(seg.slot_by_index(1).unwrap()), 1);
 ```
 
+### 重なる区間をまとめる (区間集合)
+
+重なる・接する区間を 1 本にまとめ、値を足し合わせる例です。
+
+```rust
+use avl_tree::{IntervalSet, Map, Merge};
+
+/// 重なる区間の値を足し合わせる
+enum Sum {}
+
+impl Merge for Sum {
+    type S = i64;
+
+    fn merge(a: &i64, b: &i64) -> i64 {
+        a + b
+    }
+
+    fn identity() -> i64 {
+        0
+    }
+}
+
+let mut set: Map<IntervalSet<i64, Sum>> = Map::new();
+set.insert_range(0..10, 3);
+set.insert_range(5..15, 5); // [0, 10) と重なるので [0, 15) 値 8 にまとまる
+set.insert_range(20..30, 7);
+
+assert_eq!(set.len(), 2);
+assert_eq!(set.get_point(&7), Some(&8));
+assert_eq!(set.get_point_or_identity(&18), 0);
+assert!(!set.overlaps(&(15..20))); // 端点で接するだけなら重ならない
+assert!(set.overlaps(&(14..20)));
+assert!(set.contains_range(&(6..12)));
+
+// 削除は被覆部分の切り取り。はみ出した断片は元の値を引き継ぐ
+set.remove_range(10..25);
+let intervals: Vec<(i64, i64, i64)> = set
+    .iter_intervals()
+    .map(|(interval, &value)| (*interval.start(), *interval.end(), value))
+    .collect();
+assert_eq!(intervals, vec![(0, 10, 8), (25, 30, 7)]);
+```
+
 ## 注意点
 
 ### Slot は削除を挟むと別の要素を指しうる
@@ -478,6 +575,44 @@ Element レベルの `iter_mut_elements` で値を書き換えた場合も同じ
 吸収されるか置き換えられます。重複を許すマルチセットが必要なときは、
 `Indexed` の例のようにキーに通し番号を足して一意にしてください。
 
+### 区間の削除では値が分割されない
+
+`IntervalSet` の `remove_range` は被覆部分を切り取り、はみ出した断片へ値を
+引き継がせます。`Merge` はモノイドで値の逆元を持たないため、1 本の区間の
+中央をくり抜くと**同じ値が左右の断片の両方に残ります**。
+
+```rust
+use avl_tree::{IntervalSet, Map, Merge};
+
+/// 重なる区間の値を足し合わせる
+enum Sum {}
+
+impl Merge for Sum {
+    type S = i64;
+
+    fn merge(a: &i64, b: &i64) -> i64 {
+        a + b
+    }
+
+    fn identity() -> i64 {
+        0
+    }
+}
+
+let mut set: Map<IntervalSet<i64, Sum>> = Map::new();
+set.insert_range(0..10, 5);
+set.remove_range(4..6); // 中央をくり抜く
+
+let values: Vec<(i64, i64, i64)> = set
+    .iter_intervals()
+    .map(|(interval, &value)| (*interval.start(), *interval.end(), value))
+    .collect();
+assert_eq!(values, vec![(0, 4, 5), (6, 10, 5)]); // 値 5 が両方の断片に残る
+```
+
+このため、削除と追加を繰り返すと値の総和は保存されません。
+値の総和が保存されることを期待する用途では注意してください。
+
 ## verify
 
 - [yukicoder No.649 ここでちょっとQK！](https://yukicoder.me/problems/no/649)
@@ -491,6 +626,11 @@ Element レベルの `iter_mut_elements` で値を書き換えた場合も同じ
   `put` / `apply` / `prod` が検証されます。
 
 yukicoder の 2 問は値が重複しうるので、キーに通し番号を足して一意化しています。
+
+`IntervalSet` は「重なった区間の値をモノイドで合成し、削除では値を分割しない」
+という意味論に対応するジャッジ問題が見つかっていないため、verify 問題は
+用意していません。代わりに `crates/avl-tree/src/tests/interval_set.rs` で
+素朴なモデルとランダムに突き合わせ、doctest で使用例を検証しています。
 
 ## 実装メモ
 
@@ -526,16 +666,26 @@ yukicoder の 2 問は値が重複しうるので、キーに通し番号を足�
 `prod` / `apply` は「範囲と交差しない」「完全に含まれる」を判定して
 再帰を打ち切ります。
 
+`IntervalSet` は区間の重なり・接触の判定と値の合成を
+`Element::can_absorb` / `Element::absorb` に書くだけで、あとは木の
+`insert_element` が前後の区間を吸収します。一方、点や区間のクエリ
+(`covering` / `covers` / `contains_range` / `overlaps`) は区間が重ならない
+ことを利用して、区間の始点だけを見て降りる専用の二分探索として
+`Map<IntervalSet<T, M>>` のメソッドに実装しています。`Map::contains` は
+Element レベルの API として既にあるため、点の被覆判定は `covers` という
+名前で生やしています。
+
 ## ソース
 
 `crates/avl-tree/src/lib.rs` の全文です。コードブロック右上のボタンでまるごとコピーできます。
 リポジトリのファイルをそのまま埋め込んでいるので、この表示が実装とずれることはありません。
 
 `#[cfg(test)] mod tests;` は提出先では無効になるので、そのまま貼って構いません。
-`Indexed` と `LazySegmentTree` を使わない提出では、`lib.rs` の
+`Indexed` と `LazySegmentTree` と `IntervalSet` を使わない提出では、`lib.rs` の
 `mod indexed;` / `pub use indexed::Indexed;` と
-`mod lazy_segment_tree;` / `pub use lazy_segment_tree::{Action, LazySegmentTree, Monoid};`
-の 4 行を消せば、この `lib.rs` だけで済みます。
+`mod lazy_segment_tree;` / `pub use lazy_segment_tree::{Action, LazySegmentTree, Monoid};` と
+`mod interval_set;` / `pub use interval_set::{Interval, IntervalSet, Merge};`
+の 6 行を消せば、この `lib.rs` だけで済みます。
 
 ```rust,ignore
 {{#include ../../../crates/avl-tree/src/lib.rs}}
@@ -565,5 +715,19 @@ mod indexed {
 ```rust,ignore
 mod lazy_segment_tree {
 {{#include ../../../crates/avl-tree/src/lazy_segment_tree.rs}}
+}
+```
+
+### IntervalSet も使う
+
+区間集合 (`IntervalSet` / `Merge` / `Interval` / `insert_range` / `remove_range` /
+`get_point` / `covering` など) を使う提出では
+`crates/avl-tree/src/interval_set.rs` も必要です。`lib.rs` の
+`mod interval_set;` を次のブロックで置き換えてください。
+真ん中が `interval_set.rs` の全文です。
+
+```rust,ignore
+mod interval_set {
+{{#include ../../../crates/avl-tree/src/interval_set.rs}}
 }
 ```
