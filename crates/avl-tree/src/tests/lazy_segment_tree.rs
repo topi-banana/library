@@ -549,3 +549,68 @@ fn lazy_segment_tree_edges() {
     assert_eq!(seg.all_prod(), (0, 0));
     assert_invariants(&seg, "edges");
 }
+
+/// 非可換モノイド: 文字列の連結
+enum Concat {}
+
+impl Monoid for Concat {
+    type S = String;
+
+    fn op(a: &String, b: &String) -> String {
+        format!("{a}{b}")
+    }
+
+    fn identity() -> String {
+        String::new()
+    }
+}
+
+impl Action for Concat {
+    /// 各文字を 2^n 回繰り返す作用
+    ///
+    /// `n = 0` が恒等作用になるので、集約値に適用しても要素ごとに適用しても
+    /// 結果が変わらない作用として使える。
+    type F = u32;
+
+    fn mapping(n: &u32, s: &String) -> String {
+        s.chars().flat_map(|c| std::iter::repeat_n(c, 1 << n)).collect()
+    }
+
+    fn composition(f: &u32, g: &u32) -> u32 {
+        f + g
+    }
+
+    fn id() -> u32 {
+        0
+    }
+}
+
+#[test]
+fn non_commutative_monoid_keeps_in_order() {
+    let mut seg: Map<LazySegmentTree<i32, Concat>> = Map::new();
+    // 挿入順ではなくキー順 (左から右) の順で集約される
+    for (key, value) in [(3, "c"), (1, "a"), (5, "e"), (2, "b"), (4, "d")] {
+        seg.put(key, String::from(value));
+    }
+
+    assert_eq!(seg.all_prod(), "abcde");
+    assert_eq!(seg.prod(1..6), "abcde");
+    assert_eq!(seg.prod(2..5), "bcd");
+    assert_eq!(seg.prod(3..6), "cde");
+    assert_eq!(seg.prod(1..3), "ab");
+
+    // 作用を挟んでも左から右の順で集約される
+    seg.apply(2..5, 1);
+    assert_eq!(seg.get(&3).map(String::as_str), Some("cc"));
+    assert_eq!(seg.all_prod(), "abbccdde");
+    assert_eq!(seg.prod(1..6), "abbccdde");
+    assert_eq!(seg.prod(2..5), "bbccdd");
+    assert_eq!(seg.prod(3..6), "ccdde");
+
+    // 削除後も残りの要素が順序どおり
+    assert_eq!(seg.remove(&3).as_deref(), Some("cc"));
+    assert_eq!(seg.all_prod(), "abbdde");
+    assert_eq!(seg.prod(1..6), "abbdde");
+
+    assert_invariants(&seg, "non commutative");
+}

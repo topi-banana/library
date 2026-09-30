@@ -260,7 +260,7 @@ impl<K: Ord + Clone, A: Action> Element for LazySegmentTree<K, A> {
     fn update(&mut self, left: Option<&Self>, right: Option<&Self>) {
         let left_aggregate = left.map_or_else(A::identity, |l| l.aggregate.clone());
         let right_aggregate = right.map_or_else(A::identity, |r| r.aggregate.clone());
-        let aggregate = A::op(&self.value, &A::op(&left_aggregate, &right_aggregate));
+        let aggregate = A::op(&A::op(&left_aggregate, &self.value), &right_aggregate);
         // 溜まっている作用はまだ自分の値と子に適用されていないので、
         // 集約値にはここで反映しておく
         self.aggregate = A::mapping(&self.lazy, &aggregate);
