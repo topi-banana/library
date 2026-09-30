@@ -16,6 +16,7 @@
 ```text
 library/
 ├── crates/                 各アルゴリズムの crate
+│   ├── avl-tree/           AVL 木マップ (Element で拡張・順序統計・区間作用・区間集合)
 │   ├── div_conquer/        平方分割 (ブロック分割による区間クエリ)
 │   ├── fibonacci/          フィボナッチ数列 (行列累乗と列挙)
 │   ├── kmp/                Knuth-Morris-Pratt 法 (列の検索)

@@ -15,6 +15,7 @@
   - [Permutation — 順列](./comb/permutation.md)
 - [集合](./set/index.md)
   - [Ranges — 半開区間の集合](./set/ranges.md)
+  - [AvlTree — Element で拡張できる順序付きマップ](./set/avl-tree.md)
 - [クエリ](./query/index.md)
   - [DivConquer — 平方分割](./query/div_conquer.md)
   - [Mo — Mo's algorithm](./query/mo.md)

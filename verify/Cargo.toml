@@ -7,6 +7,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+avl-tree.workspace = true
 div_conquer.workspace = true
 fibonacci.workspace = true
 kmp.workspace = true
