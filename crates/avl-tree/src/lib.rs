@@ -1593,19 +1593,23 @@ impl<'a, E: Element> Iterator for IterMutElements<'a, E> {
             return None;
         }
         let index = self.front;
+        // 次位置は要素への可変参照を作る前に求める。`next_node` はノードへの
+        // 共有参照を作るため、先に `&mut` を作ると無効化されてしまう。
+        // SAFETY: `self.map` は有効なマップを指している。
+        let next = if self.len == 1 {
+            self.back = usize::MAX;
+            usize::MAX
+        } else {
+            unsafe { (*self.map).next_node(index) }
+        };
+        self.front = next;
+        self.len -= 1;
         // SAFETY: 呼び出しごとに重複しないノードを返し、`self.map` は有効な
         // マップを指している。
         unsafe {
             let map = &mut *self.map;
             let node = &mut map.nodes[index];
             let element = &mut *(&mut node.element as *mut E);
-            self.front = if self.len == 1 {
-                self.back = usize::MAX;
-                usize::MAX
-            } else {
-                map.next_node(index)
-            };
-            self.len -= 1;
             Some(element)
         }
     }
@@ -1621,19 +1625,22 @@ impl<'a, E: Element> DoubleEndedIterator for IterMutElements<'a, E> {
             return None;
         }
         let index = self.back;
+        // 前位置は要素への可変参照を作る前に求める (理由は `next` と同じ)。
+        // SAFETY: `self.map` は有効なマップを指している。
+        let prev = if self.len == 1 {
+            self.front = usize::MAX;
+            usize::MAX
+        } else {
+            unsafe { (*self.map).prev_node(index) }
+        };
+        self.back = prev;
+        self.len -= 1;
         // SAFETY: 呼び出しごとに重複しないノードを返し、`self.map` は有効な
         // マップを指している。
         unsafe {
             let map = &mut *self.map;
             let node = &mut map.nodes[index];
             let element = &mut *(&mut node.element as *mut E);
-            self.back = if self.len == 1 {
-                self.front = usize::MAX;
-                usize::MAX
-            } else {
-                map.prev_node(index)
-            };
-            self.len -= 1;
             Some(element)
         }
     }
@@ -1840,18 +1847,22 @@ impl<'a, E: MapElement> Iterator for RangeMut<'a, E> {
             return None;
         }
         let index = self.front;
+        // 次位置は参照を作る前に求める (`next_node` の共有参照で `&mut` が
+        // 無効化されるのを避ける)。
+        // SAFETY: `self.map` は有効なマップを指している。
+        let next = if self.front == self.back {
+            self.back = usize::MAX;
+            usize::MAX
+        } else {
+            unsafe { (*self.map).next_node(index) }
+        };
+        self.front = next;
         // SAFETY: 呼び出しごとに重複しないノードを返し、`self.map` は有効な
         // マップを指している。
         unsafe {
             let map = &mut *self.map;
             let node = &mut map.nodes[index];
             let element = &mut *(&mut node.element as *mut E);
-            self.front = if self.front == self.back {
-                self.back = usize::MAX;
-                usize::MAX
-            } else {
-                map.next_node(index)
-            };
             let (key, value) = element.key_value_mut();
             Some((key, value))
         }
@@ -1864,18 +1875,21 @@ impl<'a, E: MapElement> DoubleEndedIterator for RangeMut<'a, E> {
             return None;
         }
         let index = self.back;
+        // 前位置は参照を作る前に求める (理由は `next` と同じ)。
+        // SAFETY: `self.map` は有効なマップを指している。
+        let prev = if self.back == self.front {
+            self.front = usize::MAX;
+            usize::MAX
+        } else {
+            unsafe { (*self.map).prev_node(index) }
+        };
+        self.back = prev;
         // SAFETY: 呼び出しごとに重複しないノードを返し、`self.map` は有効な
         // マップを指している。
         unsafe {
             let map = &mut *self.map;
             let node = &mut map.nodes[index];
             let element = &mut *(&mut node.element as *mut E);
-            self.back = if self.back == self.front {
-                self.front = usize::MAX;
-                usize::MAX
-            } else {
-                map.prev_node(index)
-            };
             let (key, value) = element.key_value_mut();
             Some((key, value))
         }
